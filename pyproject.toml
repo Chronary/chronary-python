@@ -1,0 +1,85 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "chronary"
+dynamic = ["version"]
+description = "Python client library for the Chronary calendar-as-a-service API"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+authors = [{ name = "Chronary", email = "support@chronary.ai" }]
+classifiers = [
+    "Typing :: Typed",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "httpx >=0.25.0,<1",
+    "pydantic >=2.0,<3",
+    "anyio >=3.5.0,<5",
+    "typing-extensions >=4.7,<5",
+]
+
+[project.urls]
+Homepage = "https://chronary.ai"
+Documentation = "https://docs.chronary.ai"
+Repository = "https://github.com/Chronary/chronary-python"
+Issues = "https://github.com/Chronary/chronary-python/issues"
+
+[tool.hatch.version]
+path = "src/chronary/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/chronary"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest >=8.0,<9",
+    "pytest-asyncio >=0.24,<1",
+    "respx >=0.21,<1",
+    "ruff >=0.4,<1",
+    "pyright >=1.1,<2",
+    "pytest-cov >=5.0,<6",
+]
+
+[dependency-groups]
+dev = [
+    "pytest >=8.0,<9",
+    "pytest-asyncio >=0.24,<1",
+    "respx >=0.21,<1",
+    "ruff >=0.4,<1",
+    "pyright >=1.1,<2",
+    "pytest-cov >=5.0,<6",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "TCH"]
+
+[tool.pyright]
+pythonVersion = "3.10"
+typeCheckingMode = "standard"
+include = ["src"]
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["chronary"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
