@@ -28,6 +28,7 @@ class UsageResponse(ChronaryModel):
     webhooks: ResourceUsage
     availability_queries: ResourceUsage
     ical_subscriptions: ResourceUsage
+    proposals: ResourceUsage
 
 
 # ---------------------------------------------------------------------------

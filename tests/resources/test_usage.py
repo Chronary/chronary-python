@@ -18,6 +18,7 @@ USAGE_DATA = {
     "webhooks": {"used": 50, "limit": 10000},
     "availability_queries": {"used": 30, "limit": 10000},
     "ical_subscriptions": {"used": 1, "limit": 3},
+    "proposals": {"used": 18, "limit": 500},
 }
 
 
@@ -42,6 +43,8 @@ class TestSyncUsage:
             assert usage.agents.limit == 5
             assert usage.events.used == 150
             assert usage.ical_subscriptions.used == 1
+            assert usage.proposals.used == 18
+            assert usage.proposals.limit == 500
 
     @respx.mock
     def test_request_id(self) -> None:

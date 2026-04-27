@@ -91,3 +91,68 @@ class TestAsyncClient:
         client = AsyncChronary(api_key="chr_sk_test_x")
         agents = client.agents
         assert agents is client.agents  # same instance
+
+
+class TestAgentKeyKwarg:
+    """Coverage for api_key / agent_key kwargs and the key_type property."""
+
+    def test_backend_key_sets_key_type_backend(self) -> None:
+        client = Chronary(api_key="chr_sk_test_abc")
+        assert client.key_type == "backend"
+        assert client._api_key == "chr_sk_test_abc"
+        client.close()
+
+    def test_agent_key_sets_key_type_agent(self) -> None:
+        client = Chronary(agent_key="chr_ak_test_abc")
+        assert client.key_type == "agent"
+        assert client._api_key == "chr_ak_test_abc"
+        client.close()
+
+    def test_agent_key_async_variant(self) -> None:
+        client = AsyncChronary(agent_key="chr_ak_test_abc")
+        assert client.key_type == "agent"
+        assert client._api_key == "chr_ak_test_abc"
+
+    def test_both_kwargs_explicit_raises_type_error(self) -> None:
+        with pytest.raises(TypeError, match="not both"):
+            Chronary(api_key="chr_sk_test_x", agent_key="chr_ak_test_y")
+
+    def test_both_kwargs_explicit_raises_async_too(self) -> None:
+        with pytest.raises(TypeError, match="not both"):
+            AsyncChronary(api_key="chr_sk_test_x", agent_key="chr_ak_test_y")
+
+    def test_neither_kwarg_neither_env_returns_none_key_type(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            os.environ.pop("CHRONARY_API_KEY", None)
+            os.environ.pop("CHRONARY_AGENT_KEY", None)
+            client = Chronary()
+            assert client.key_type is None
+            assert client._api_key is None
+            client.close()
+
+    def test_agent_key_env_var_resolves(self) -> None:
+        with patch.dict(os.environ, {"CHRONARY_AGENT_KEY": "chr_ak_test_env"}, clear=True):
+            client = Chronary()
+            assert client.key_type == "agent"
+            assert client._api_key == "chr_ak_test_env"
+            client.close()
+
+    def test_both_env_vars_set_backend_wins(self) -> None:
+        """Deterministic tiebreak when both env vars set — backend wins."""
+        with patch.dict(
+            os.environ,
+            {"CHRONARY_API_KEY": "chr_sk_test_env", "CHRONARY_AGENT_KEY": "chr_ak_test_env"},
+            clear=True,
+        ):
+            client = Chronary()
+            assert client.key_type == "backend"
+            assert client._api_key == "chr_sk_test_env"
+            client.close()
+
+    def test_explicit_api_key_overrides_agent_env(self) -> None:
+        """Explicit kwarg beats an env var of the other kind."""
+        with patch.dict(os.environ, {"CHRONARY_AGENT_KEY": "chr_ak_test_env"}, clear=True):
+            client = Chronary(api_key="chr_sk_test_explicit")
+            assert client.key_type == "backend"
+            assert client._api_key == "chr_sk_test_explicit"
+            client.close()

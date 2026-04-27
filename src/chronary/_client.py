@@ -4,7 +4,11 @@ from typing import TYPE_CHECKING, Any
 
 from ._base_client import AsyncAPIClient, SyncAPIClient
 from .resources import (
+    Account,
+    AgentAuth,
     Agents,
+    AsyncAccount,
+    AsyncAgentAuth,
     AsyncAgents,
     AsyncAvailability,
     AsyncCalendars,
@@ -46,11 +50,14 @@ class Chronary(SyncAPIClient):
     _keys: Keys | None
     _feedback: Feedback | None
     _plans: Plans | None
+    _agent_auth: AgentAuth | None
+    _account: Account | None
 
     def __init__(
         self,
         *,
         api_key: str | None = None,
+        agent_key: str | None = None,
         base_url: str = "https://api.chronary.ai",
         timeout: float = 60.0,
         max_retries: int = 2,
@@ -58,6 +65,7 @@ class Chronary(SyncAPIClient):
     ) -> None:
         super().__init__(
             api_key=api_key,
+            agent_key=agent_key,
             base_url=base_url,
             timeout=timeout,
             max_retries=max_retries,
@@ -74,6 +82,8 @@ class Chronary(SyncAPIClient):
         self._keys = None
         self._feedback = None
         self._plans = None
+        self._agent_auth = None
+        self._account = None
 
     @property
     def agents(self) -> Agents:
@@ -141,6 +151,18 @@ class Chronary(SyncAPIClient):
             self._plans = Plans(self)
         return self._plans
 
+    @property
+    def agent_auth(self) -> AgentAuth:
+        if self._agent_auth is None:
+            self._agent_auth = AgentAuth(self)
+        return self._agent_auth
+
+    @property
+    def account(self) -> Account:
+        if self._account is None:
+            self._account = Account(self)
+        return self._account
+
     def __enter__(self) -> Chronary:
         return self
 
@@ -162,11 +184,14 @@ class AsyncChronary(AsyncAPIClient):
     _keys: AsyncKeys | None
     _feedback: AsyncFeedback | None
     _plans: AsyncPlans | None
+    _agent_auth: AsyncAgentAuth | None
+    _account: AsyncAccount | None
 
     def __init__(
         self,
         *,
         api_key: str | None = None,
+        agent_key: str | None = None,
         base_url: str = "https://api.chronary.ai",
         timeout: float = 60.0,
         max_retries: int = 2,
@@ -174,6 +199,7 @@ class AsyncChronary(AsyncAPIClient):
     ) -> None:
         super().__init__(
             api_key=api_key,
+            agent_key=agent_key,
             base_url=base_url,
             timeout=timeout,
             max_retries=max_retries,
@@ -190,6 +216,8 @@ class AsyncChronary(AsyncAPIClient):
         self._keys = None
         self._feedback = None
         self._plans = None
+        self._agent_auth = None
+        self._account = None
 
     @property
     def agents(self) -> AsyncAgents:
@@ -256,6 +284,18 @@ class AsyncChronary(AsyncAPIClient):
         if self._plans is None:
             self._plans = AsyncPlans(self)
         return self._plans
+
+    @property
+    def agent_auth(self) -> AsyncAgentAuth:
+        if self._agent_auth is None:
+            self._agent_auth = AsyncAgentAuth(self)
+        return self._agent_auth
+
+    @property
+    def account(self) -> AsyncAccount:
+        if self._account is None:
+            self._account = AsyncAccount(self)
+        return self._account
 
     async def __aenter__(self) -> AsyncChronary:
         return self

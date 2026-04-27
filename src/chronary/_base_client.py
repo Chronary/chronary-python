@@ -3,9 +3,11 @@ from __future__ import annotations
 import os
 import random
 import time
-from typing import Any
+from typing import Any, Literal
 
 import httpx
+
+KeyType = Literal["backend", "agent"]
 
 from ._exceptions import (
     APIConnectionError,
@@ -47,11 +49,40 @@ def _sleep_time(attempt: int, retry_after: str | None) -> float:
     return delay + jitter
 
 
-def _resolve_api_key(api_key: str | None) -> str | None:
-    # Returns None when no key is available — downstream _default_headers
-    # omits the Authorization header in that case. Authed endpoints surface
-    # 401 from the server rather than an SDK-side validation error.
-    return api_key or os.environ.get("CHRONARY_API_KEY") or None
+def _resolve_credentials(
+    api_key: str | None, agent_key: str | None
+) -> tuple[str | None, KeyType | None]:
+    """Resolve auth credentials from kwargs or env vars.
+
+    Kwarg takes precedence over env. Raises TypeError if both kwargs are
+    explicitly set (mutual exclusion). If neither kwarg is set but both env
+    vars are populated, ``CHRONARY_API_KEY`` wins deterministically — callers
+    who want the agent key should pass ``agent_key=`` explicitly or unset
+    the backend env var.
+
+    Returns ``(token, key_type)``; either or both may be None if no
+    credential is available. Unauthenticated clients are supported —
+    ``plans.list`` and ``agent_auth.sign_up`` require no auth.
+    """
+    if api_key is not None and agent_key is not None:
+        raise TypeError(
+            "Pass either api_key= or agent_key=, not both. "
+            "api_key accepts org-level keys (chr_sk_*); agent_key accepts "
+            "agent-scoped keys (chr_ak_*)."
+        )
+    if api_key is not None:
+        return api_key, "backend"
+    if agent_key is not None:
+        return agent_key, "agent"
+
+    env_api = os.environ.get("CHRONARY_API_KEY")
+    if env_api:
+        return env_api, "backend"
+    env_agent = os.environ.get("CHRONARY_AGENT_KEY")
+    if env_agent:
+        return env_agent, "agent"
+
+    return None, None
 
 
 class SyncAPIClient:
@@ -60,6 +91,7 @@ class SyncAPIClient:
     _client: httpx.Client
     _owns_client: bool
     _api_key: str | None
+    _key_type: KeyType | None
     base_url: str
     max_retries: int
 
@@ -67,12 +99,13 @@ class SyncAPIClient:
         self,
         *,
         api_key: str | None = None,
+        agent_key: str | None = None,
         base_url: str = "https://api.chronary.ai",
         timeout: float = 60.0,
         max_retries: int = 2,
         httpx_client: httpx.Client | None = None,
     ) -> None:
-        self._api_key = _resolve_api_key(api_key)
+        self._api_key, self._key_type = _resolve_credentials(api_key, agent_key)
         self.base_url = base_url
         self.max_retries = max_retries
 
@@ -86,6 +119,11 @@ class SyncAPIClient:
                 timeout=timeout,
             )
             self._owns_client = True
+
+    @property
+    def key_type(self) -> KeyType | None:
+        """Which credential the client is using — ``"backend"``, ``"agent"``, or ``None``."""
+        return self._key_type
 
     def _request(
         self,
@@ -155,6 +193,7 @@ class AsyncAPIClient:
     _client: httpx.AsyncClient
     _owns_client: bool
     _api_key: str | None
+    _key_type: KeyType | None
     base_url: str
     max_retries: int
 
@@ -162,12 +201,13 @@ class AsyncAPIClient:
         self,
         *,
         api_key: str | None = None,
+        agent_key: str | None = None,
         base_url: str = "https://api.chronary.ai",
         timeout: float = 60.0,
         max_retries: int = 2,
         httpx_client: httpx.AsyncClient | None = None,
     ) -> None:
-        self._api_key = _resolve_api_key(api_key)
+        self._api_key, self._key_type = _resolve_credentials(api_key, agent_key)
         self.base_url = base_url
         self.max_retries = max_retries
 
@@ -181,6 +221,11 @@ class AsyncAPIClient:
                 timeout=timeout,
             )
             self._owns_client = True
+
+    @property
+    def key_type(self) -> KeyType | None:
+        """Which credential the client is using — ``"backend"``, ``"agent"``, or ``None``."""
+        return self._key_type
 
     async def _request(
         self,

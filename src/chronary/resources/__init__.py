@@ -1,3 +1,5 @@
+from .account import Account, AsyncAccount
+from .agent_auth import AgentAuth, AsyncAgentAuth
 from .agents import Agents, AsyncAgents
 from .availability import AsyncAvailability, Availability
 from .calendars import AgentCalendars, AsyncAgentCalendars, AsyncCalendars, Calendars
@@ -11,6 +13,10 @@ from .usage import AsyncUsage, Usage
 from .webhooks import AsyncWebhooks, Webhooks
 
 __all__ = [
+    "Account",
+    "AsyncAccount",
+    "AgentAuth",
+    "AsyncAgentAuth",
     "Agents",
     "AsyncAgents",
     "Availability",

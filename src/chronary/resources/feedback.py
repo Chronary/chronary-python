@@ -25,6 +25,17 @@ class FeedbackAcceptedResponse(ChronaryModel):
 _FEEDBACK_PATH = "/v1/feedback"
 
 
+_RATE_LIMIT_DOC = """Submit structured feedback (bug, feature, or friction) to Chronary.
+
+Rate-limited to 25 submissions per day per organization (UTC day) for
+live-mode keys. **Test-mode keys (chr_sk_test_*) bypass the cap entirely**
+so synthetic test traffic doesn't contend with real users' feedback budget.
+Available on all plans, including free. The 26th submission with a live key
+raises a quota error; the response includes Retry-After seconds until the
+next UTC midnight.
+"""
+
+
 class Feedback(SyncAPIResource):
     """client.feedback -- submit structured feedback to Chronary."""
 
@@ -41,6 +52,8 @@ class Feedback(SyncAPIResource):
             body["context"] = context
         resp = self._request("POST", _FEEDBACK_PATH, json=body, max_retries=max_retries)
         return self._build(FeedbackAcceptedResponse, resp)
+
+    submit.__doc__ = _RATE_LIMIT_DOC
 
 
 class AsyncFeedback(AsyncAPIResource):
@@ -61,3 +74,5 @@ class AsyncFeedback(AsyncAPIResource):
             "POST", _FEEDBACK_PATH, json=body, max_retries=max_retries
         )
         return self._build(FeedbackAcceptedResponse, resp)
+
+    submit.__doc__ = _RATE_LIMIT_DOC

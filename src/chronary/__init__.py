@@ -15,6 +15,12 @@ from ._exceptions import (
 )
 from ._version import __version__
 from .pagination import AsyncPager, ListResponse, SyncPager
+from .resources.agent_auth import (
+    AgentSignUpParams,
+    AgentSignUpResponse,
+    AgentVerifyParams,
+    AgentVerifyResponse,
+)
 from .resources.agents import (
     Agent,
     AgentCreateParams,
@@ -81,6 +87,7 @@ from .resources.webhooks import (
     WebhookListParams,
     WebhookUpdateParams,
 )
+from .webhook import SignatureVerificationError, unwrap, verify_signature
 
 __all__ = [
     "__version__",
@@ -123,6 +130,9 @@ __all__ = [
     "WebhookListParams",
     "WebhookEventType",
     "WEBHOOK_EVENT_TYPES",
+    "verify_signature",
+    "unwrap",
+    "SignatureVerificationError",
     # iCal Subscription
     "ICalSubscription",
     "ICalSubscriptionCreateParams",
@@ -158,6 +168,11 @@ __all__ = [
     "PlanId",
     "PlanLimits",
     "PlansListResponse",
+    # Agent auth
+    "AgentSignUpParams",
+    "AgentSignUpResponse",
+    "AgentVerifyParams",
+    "AgentVerifyResponse",
     # Errors
     "ChronaryError",
     "APIError",

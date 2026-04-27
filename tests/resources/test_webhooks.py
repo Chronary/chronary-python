@@ -258,3 +258,113 @@ class TestWebhookEventType:
                     "createdAt": "2026-01-15T10:30:00Z",
                 }
             )
+
+
+# Parity check vs canonical list in packages/shared/src/schemas/webhooks.ts.
+# Any drift here means the TS source of truth added an event type and the
+# Python literal is silently rejecting it. Update both when adding new events.
+_CANONICAL_EVENT_TYPES = (
+    "agent.created",
+    "agent.updated",
+    "event.created",
+    "event.updated",
+    "event.deleted",
+    "event.started",
+    "event.ended",
+    "event.hold_created",
+    "event.hold_expired",
+    "event.hold_released",
+    "event.hold_confirmed",
+    "proposal.created",
+    "proposal.responded",
+    "proposal.confirmed",
+    "proposal.expired",
+    "proposal.cancelled",
+    "webhook.deactivated",
+)
+
+
+class TestWebhookEventTypeParity:
+    @pytest.mark.parametrize("event_type", _CANONICAL_EVENT_TYPES)
+    def test_every_canonical_event_type_is_in_python_literal(self, event_type: str) -> None:
+        assert event_type in WEBHOOK_EVENT_TYPES, (
+            f"{event_type!r} is in packages/shared/src/schemas/webhooks.ts but missing from "
+            f"the Python SDK WebhookEventType literal — parity drift"
+        )
+
+    def test_python_literal_matches_canonical_count(self) -> None:
+        assert len(WEBHOOK_EVENT_TYPES) == len(_CANONICAL_EVENT_TYPES), (
+            f"Python WEBHOOK_EVENT_TYPES has {len(WEBHOOK_EVENT_TYPES)} entries, "
+            f"canonical has {len(_CANONICAL_EVENT_TYPES)} — one of them is stale"
+        )
+
+
+class TestClientWebhooksVerifyDelegation:
+    """client.webhooks.verify_signature and .unwrap delegate to chronary.webhook.*.
+
+    Full crypto coverage is in tests/test_webhook.py. These tests just prove
+    the resource-nested methods exist and route correctly.
+    """
+
+    def _sign(self, payload: bytes, timestamp: str, secret: str) -> str:
+        import hashlib
+        import hmac
+
+        message = f"{timestamp}.".encode("utf-8") + payload
+        return "sha256=" + hmac.new(secret.encode(), message, hashlib.sha256).hexdigest()
+
+    def test_verify_signature_accepts_valid_webhook(self) -> None:
+        import time
+
+        secret = "whsec_test"
+        payload = b'{"id":"evt_1","type":"event.created"}'
+        ts = str(int(time.time()))
+        headers = {"X-Signature": self._sign(payload, ts, secret), "X-Timestamp": ts}
+
+        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+            # Returns None on success; raises on failure.
+            client.webhooks.verify_signature(payload, headers, secret=secret)
+
+    def test_verify_signature_raises_on_tampered(self) -> None:
+        import time
+
+        from chronary import SignatureVerificationError
+
+        secret = "whsec_test"
+        payload = b'{"id":"evt_1","type":"event.created"}'
+        ts = str(int(time.time()))
+        headers = {"X-Signature": self._sign(payload, ts, secret), "X-Timestamp": ts}
+
+        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+            with pytest.raises(SignatureVerificationError):
+                client.webhooks.verify_signature(
+                    b'{"id":"evt_1","type":"event.deleted"}', headers, secret=secret
+                )
+
+    def test_unwrap_returns_parsed_event(self) -> None:
+        import time
+
+        secret = "whsec_test"
+        event_body = {"id": "evt_1", "type": "event.created", "data": {"x": 1}}
+        import json
+
+        payload = json.dumps(event_body).encode("utf-8")
+        ts = str(int(time.time()))
+        headers = {"X-Signature": self._sign(payload, ts, secret), "X-Timestamp": ts}
+
+        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+            result = client.webhooks.unwrap(payload, headers, secret=secret)
+            assert result == event_body
+
+    async def test_async_client_exposes_same_methods(self) -> None:
+        import time
+
+        secret = "whsec_test"
+        payload = b'{"id":"evt_1","type":"event.created"}'
+        ts = str(int(time.time()))
+        headers = {"X-Signature": self._sign(payload, ts, secret), "X-Timestamp": ts}
+
+        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+            # Methods are @staticmethod so they work on both sync + async
+            # resources without awaiting.
+            client.webhooks.verify_signature(payload, headers, secret=secret)

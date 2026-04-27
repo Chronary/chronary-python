@@ -3,6 +3,11 @@ from __future__ import annotations
 from datetime import datetime  # noqa: TCH003 — Pydantic needs this at runtime
 from typing import Any, Literal, Optional
 
+from ..webhook import (
+    unwrap as _unwrap,
+    verify_signature as _verify_signature,
+)
+
 from pydantic import Field
 from typing_extensions import Required, TypedDict
 
@@ -229,6 +234,28 @@ class Webhooks(SyncAPIResource):
         resp = self._request("GET", path, params=params, max_retries=max_retries)
         return WebhookDeliveryListResponse.model_validate(resp.json())
 
+    @staticmethod
+    def verify_signature(
+        payload: bytes | str,
+        headers: Any,
+        *,
+        secret: str,
+        tolerance: int = 300,
+    ) -> None:
+        """Verify an incoming webhook's signature. See chronary.webhook.verify_signature."""
+        _verify_signature(payload, headers, secret=secret, tolerance=tolerance)
+
+    @staticmethod
+    def unwrap(
+        payload: bytes | str,
+        headers: Any,
+        *,
+        secret: str,
+        tolerance: int = 300,
+    ) -> dict[str, Any]:
+        """Verify + parse a webhook payload. See chronary.webhook.unwrap."""
+        return _unwrap(payload, headers, secret=secret, tolerance=tolerance)
+
 
 # ---------------------------------------------------------------------------
 # Async resource
@@ -340,3 +367,25 @@ class AsyncWebhooks(AsyncAPIResource):
         path = f"{_WEBHOOKS_PATH}/{webhook_id}/deliveries"
         resp = await self._request("GET", path, params=params, max_retries=max_retries)
         return WebhookDeliveryListResponse.model_validate(resp.json())
+
+    @staticmethod
+    def verify_signature(
+        payload: bytes | str,
+        headers: Any,
+        *,
+        secret: str,
+        tolerance: int = 300,
+    ) -> None:
+        """Verify an incoming webhook's signature. See chronary.webhook.verify_signature."""
+        _verify_signature(payload, headers, secret=secret, tolerance=tolerance)
+
+    @staticmethod
+    def unwrap(
+        payload: bytes | str,
+        headers: Any,
+        *,
+        secret: str,
+        tolerance: int = 300,
+    ) -> dict[str, Any]:
+        """Verify + parse a webhook payload. See chronary.webhook.unwrap."""
+        return _unwrap(payload, headers, secret=secret, tolerance=tolerance)
