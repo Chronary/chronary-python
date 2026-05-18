@@ -17,6 +17,7 @@ from ._exceptions import (
 from ._version import __version__
 
 _RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+_MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 _BACKOFF_BASE = 0.5
 _BACKOFF_MAX = 8.0
 _JITTER_FACTOR = 0.25
@@ -29,7 +30,7 @@ def _default_headers(api_key: str | None) -> dict[str, str]:
     # the server returns 401 and the SDK surfaces it as AuthenticationError —
     # same error shape as if the key were explicitly wrong.
     headers = {
-        "User-Agent": f"chronary-python/{__version__}",
+        "User-Agent": f"chronary-py/{__version__}",
         "Accept": "application/json",
     }
     if api_key:
@@ -133,24 +134,21 @@ class SyncAPIClient:
         json: Any | None = None,
         params: dict[str, Any] | None = None,
         max_retries: int | None = None,
+        idempotency_key: str | None = None,
     ) -> httpx.Response:
         retries = max_retries if max_retries is not None else self.max_retries
-        idempotency_key: str | None = None
+        request_headers: dict[str, str] = {}
+        if method.upper() in _MUTATING_METHODS:
+            request_headers[_IDEMPOTENCY_HEADER] = idempotency_key or os.urandom(16).hex()
 
         for attempt in range(retries + 1):
-            headers: dict[str, str] = {}
-            if method == "POST" and attempt > 0:
-                if idempotency_key is None:
-                    idempotency_key = os.urandom(16).hex()
-                headers[_IDEMPOTENCY_HEADER] = idempotency_key
-
             try:
                 response = self._client.request(
                     method,
                     path,
                     json=json,
                     params=_strip_none(params),
-                    headers=headers,
+                    headers=request_headers,
                 )
             except httpx.TimeoutException as exc:
                 if attempt >= retries:
@@ -235,24 +233,21 @@ class AsyncAPIClient:
         json: Any | None = None,
         params: dict[str, Any] | None = None,
         max_retries: int | None = None,
+        idempotency_key: str | None = None,
     ) -> httpx.Response:
         retries = max_retries if max_retries is not None else self.max_retries
-        idempotency_key: str | None = None
+        request_headers: dict[str, str] = {}
+        if method.upper() in _MUTATING_METHODS:
+            request_headers[_IDEMPOTENCY_HEADER] = idempotency_key or os.urandom(16).hex()
 
         for attempt in range(retries + 1):
-            headers: dict[str, str] = {}
-            if method == "POST" and attempt > 0:
-                if idempotency_key is None:
-                    idempotency_key = os.urandom(16).hex()
-                headers[_IDEMPOTENCY_HEADER] = idempotency_key
-
             try:
                 response = await self._client.request(
                     method,
                     path,
                     json=json,
                     params=_strip_none(params),
-                    headers=headers,
+                    headers=request_headers,
                 )
             except httpx.TimeoutException as exc:
                 if attempt >= retries:

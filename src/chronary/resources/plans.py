@@ -10,7 +10,7 @@ from .._resource import AsyncAPIResource, SyncAPIResource
 # ---------------------------------------------------------------------------
 
 
-PlanId = Literal["free", "pro", "scale", "enterprise"]
+PlanId = Literal["free", "pro", "custom"]
 
 
 class PlanLimits(ChronaryModel):

@@ -32,8 +32,8 @@ class AgentSignUpResponse(ChronaryModel):
 
     The endpoint always returns the same opaque ``message`` to prevent email
     enumeration. Only the **new-org** branch additionally includes credentials
-    (``org_id``, ``agent_id``, ``api_key``, ``test_api_key``); the existing-org
-    dedup branch returns just the message.
+    (``org_id``, ``agent_id``, ``api_key``); the existing-org dedup branch
+    returns just the message.
 
     Use :pyattr:`is_new_org` to check which branch fired before reading the
     credential fields.
@@ -43,9 +43,7 @@ class AgentSignUpResponse(ChronaryModel):
     org_id: str | None = None
     agent_id: str | None = None
     api_key: str | None = None
-    """Live-mode API key. Restricted to the verify endpoint until OTP succeeds."""
-    test_api_key: str | None = None
-    """Test-mode key (same org). Usable immediately, no verification needed."""
+    """API key. Restricted to the verify endpoint until OTP succeeds."""
 
     @property
     def is_new_org(self) -> bool:
@@ -74,10 +72,9 @@ class AgentAuth(SyncAPIResource):
     The signup flow is two requests:
 
     1. :py:meth:`sign_up` — call from an unauthenticated client. The response
-       carries a restricted ``api_key`` (only valid for ``/v1/agent/verify``)
-       plus a fully-functional ``test_api_key``.
+       carries a restricted ``api_key`` (only valid for ``/v1/agent/verify``).
     2. :py:meth:`verify` — call from a second client constructed with the
-       restricted ``api_key``. On success the live key unlocks the full API.
+       restricted ``api_key``. On success the key unlocks the full API.
 
     The existing-org dedup branch returns no credentials. Always check
     :pyattr:`AgentSignUpResponse.is_new_org` before accessing keys.

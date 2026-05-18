@@ -42,7 +42,7 @@ class TestSyncEvents:
         respx.post(f"{BASE}/v1/calendars/cal_abc123/events").mock(
             return_value=httpx.Response(201, json=EVENT_DATA)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             evt = client.events.create(
                 "cal_abc123",
                 title="Strategy Sync",
@@ -59,7 +59,7 @@ class TestSyncEvents:
         respx.get(f"{BASE}/v1/calendars/cal_abc123/events").mock(
             return_value=httpx.Response(200, json=LIST_RESPONSE)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             pager = client.events.list("cal_abc123")
             assert isinstance(pager, SyncPager)
             assert len(pager.data) == 1
@@ -69,7 +69,7 @@ class TestSyncEvents:
         respx.get(f"{BASE}/v1/calendars/cal_abc123/events/evt_abc123").mock(
             return_value=httpx.Response(200, json=EVENT_DATA)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             evt = client.events.get("cal_abc123", "evt_abc123")
             assert evt.id == "evt_abc123"
 
@@ -79,7 +79,7 @@ class TestSyncEvents:
         respx.patch(f"{BASE}/v1/calendars/cal_abc123/events/evt_abc123").mock(
             return_value=httpx.Response(200, json=updated)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             evt = client.events.update("cal_abc123", "evt_abc123", title="Renamed")
             assert evt.title == "Renamed"
 
@@ -89,7 +89,7 @@ class TestSyncEvents:
         route = respx.patch(f"{BASE}/v1/calendars/cal_abc123/events/evt_abc123").mock(
             return_value=httpx.Response(200, json=updated)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             evt = client.events.update("cal_abc123", "evt_abc123", description=None)
             assert evt.description is None
             sent_body = route.calls[0].request.content
@@ -100,7 +100,7 @@ class TestSyncEvents:
         respx.delete(f"{BASE}/v1/calendars/cal_abc123/events/evt_abc123").mock(
             return_value=httpx.Response(204)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.events.delete("cal_abc123", "evt_abc123")
             assert result is None
 
@@ -111,7 +111,7 @@ class TestSyncEvents:
                 201, json=EVENT_DATA, headers={"X-Request-Id": "req_evt_1"}
             )
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             evt = client.events.create(
                 "cal_abc123",
                 title="Strategy Sync",
@@ -126,7 +126,7 @@ class TestSyncEvents:
         respx.put(f"{BASE}/v1/events/evt_abc123/confirm").mock(
             return_value=httpx.Response(200, json=confirmed)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             evt = client.events.confirm("evt_abc123")
             assert isinstance(evt, Event)
             assert evt.status == "confirmed"
@@ -137,7 +137,7 @@ class TestSyncEvents:
         respx.put(f"{BASE}/v1/events/evt_abc123/release").mock(
             return_value=httpx.Response(200, json=released)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             evt = client.events.release("evt_abc123")
             assert isinstance(evt, Event)
             assert evt.status == "cancelled"
@@ -153,7 +153,7 @@ class TestSyncEvents:
         respx.post(f"{BASE}/v1/calendars/cal_abc123/events").mock(
             return_value=httpx.Response(201, json=hold)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             evt = client.events.create(
                 "cal_abc123",
                 title="hold slot",
@@ -178,7 +178,7 @@ class TestSyncAgentEvents:
         respx.get(f"{BASE}/v1/agents/agt_abc123/events").mock(
             return_value=httpx.Response(200, json=LIST_RESPONSE)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             pager = client.agents.events.list("agt_abc123")
             assert isinstance(pager, SyncPager)
             assert len(pager.data) == 1
@@ -196,7 +196,7 @@ class TestAsyncEvents:
         respx.post(f"{BASE}/v1/calendars/cal_abc123/events").mock(
             return_value=httpx.Response(201, json=EVENT_DATA)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             evt = await client.events.create(
                 "cal_abc123",
                 title="Strategy Sync",
@@ -211,7 +211,7 @@ class TestAsyncEvents:
         respx.get(f"{BASE}/v1/calendars/cal_abc123/events").mock(
             return_value=httpx.Response(200, json=LIST_RESPONSE)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             pager = await client.events.list("cal_abc123")
             assert isinstance(pager, AsyncPager)
             assert len(pager.data) == 1
@@ -221,7 +221,7 @@ class TestAsyncEvents:
         respx.get(f"{BASE}/v1/calendars/cal_abc123/events/evt_abc123").mock(
             return_value=httpx.Response(200, json=EVENT_DATA)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             evt = await client.events.get("cal_abc123", "evt_abc123")
             assert evt.id == "evt_abc123"
 
@@ -231,7 +231,7 @@ class TestAsyncEvents:
         respx.patch(f"{BASE}/v1/calendars/cal_abc123/events/evt_abc123").mock(
             return_value=httpx.Response(200, json=updated)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             evt = await client.events.update("cal_abc123", "evt_abc123", title="Renamed")
             assert evt.title == "Renamed"
 
@@ -240,7 +240,7 @@ class TestAsyncEvents:
         respx.delete(f"{BASE}/v1/calendars/cal_abc123/events/evt_abc123").mock(
             return_value=httpx.Response(204)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = await client.events.delete("cal_abc123", "evt_abc123")
             assert result is None
 
@@ -250,7 +250,7 @@ class TestAsyncEvents:
         respx.put(f"{BASE}/v1/events/evt_abc123/confirm").mock(
             return_value=httpx.Response(200, json=confirmed)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             evt = await client.events.confirm("evt_abc123")
             assert evt.status == "confirmed"
 
@@ -260,7 +260,7 @@ class TestAsyncEvents:
         respx.put(f"{BASE}/v1/events/evt_abc123/release").mock(
             return_value=httpx.Response(200, json=released)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             evt = await client.events.release("evt_abc123")
             assert evt.status == "cancelled"
 
@@ -271,7 +271,7 @@ class TestAsyncAgentEvents:
         respx.get(f"{BASE}/v1/agents/agt_abc123/events").mock(
             return_value=httpx.Response(200, json=LIST_RESPONSE)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             pager = await client.agents.events.list("agt_abc123")
             assert isinstance(pager, AsyncPager)
             assert len(pager.data) == 1

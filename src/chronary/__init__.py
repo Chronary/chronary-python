@@ -78,7 +78,17 @@ from .resources.scheduling import (
     ProposalSummary,
     ResolveProposalResponse,
 )
-from .resources.usage import ResourceUsage, UsageResponse
+from .resources.usage import (
+    CrossCalendarQueriesUsage,
+    HoldsUsage,
+    ResourceUsage,
+    UsageResponse,
+)
+from .resources.waitlist import (
+    WaitlistJoinParams,
+    WaitlistJoinResponse,
+    WaitlistedOrg,
+)
 from .resources.webhooks import (
     WEBHOOK_EVENT_TYPES,
     Webhook,
@@ -159,6 +169,8 @@ __all__ = [
     # Usage
     "UsageResponse",
     "ResourceUsage",
+    "HoldsUsage",
+    "CrossCalendarQueriesUsage",
     # Keys
     "ScopedApiKey",
     "CreatedScopedApiKey",
@@ -173,6 +185,10 @@ __all__ = [
     "AgentSignUpResponse",
     "AgentVerifyParams",
     "AgentVerifyResponse",
+    # Waitlist
+    "WaitlistJoinParams",
+    "WaitlistJoinResponse",
+    "WaitlistedOrg",
     # Errors
     "ChronaryError",
     "APIError",

@@ -27,7 +27,6 @@ class Calendar(ChronaryModel):
     agent_id: str | None = Field(default=None, alias="agentId")
     metadata: dict[str, Any]
     ical_url: str | None = None  # API returns snake_case for this field
-    is_test: bool = Field(default=False, alias="isTest")
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")
 

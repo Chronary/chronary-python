@@ -27,12 +27,10 @@ _FEEDBACK_PATH = "/v1/feedback"
 
 _RATE_LIMIT_DOC = """Submit structured feedback (bug, feature, or friction) to Chronary.
 
-Rate-limited to 25 submissions per day per organization (UTC day) for
-live-mode keys. **Test-mode keys (chr_sk_test_*) bypass the cap entirely**
-so synthetic test traffic doesn't contend with real users' feedback budget.
-Available on all plans, including free. The 26th submission with a live key
-raises a quota error; the response includes Retry-After seconds until the
-next UTC midnight.
+Rate-limited to 25 submissions per day per organization (UTC day).
+Available on all plans, including free. The 26th submission raises a
+quota error; the response includes Retry-After seconds until the next
+UTC midnight.
 """
 
 

@@ -19,6 +19,8 @@ USAGE_DATA = {
     "availability_queries": {"used": 30, "limit": 10000},
     "ical_subscriptions": {"used": 1, "limit": 3},
     "proposals": {"used": 18, "limit": 500},
+    "holds": {"created": 24, "confirmed": 18, "expired": 4},
+    "cross_calendar_queries": {"used": 11},
 }
 
 
@@ -33,7 +35,7 @@ class TestSyncUsage:
         respx.get(f"{BASE}/v1/usage").mock(
             return_value=httpx.Response(200, json=USAGE_DATA)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             usage = client.usage.get()
             assert isinstance(usage, UsageResponse)
             assert usage.plan == "free"
@@ -45,6 +47,10 @@ class TestSyncUsage:
             assert usage.ical_subscriptions.used == 1
             assert usage.proposals.used == 18
             assert usage.proposals.limit == 500
+            assert usage.holds.created == 24
+            assert usage.holds.confirmed == 18
+            assert usage.holds.expired == 4
+            assert usage.cross_calendar_queries.used == 11
 
     @respx.mock
     def test_request_id(self) -> None:
@@ -53,7 +59,7 @@ class TestSyncUsage:
                 200, json=USAGE_DATA, headers={"X-Request-Id": "req_usage_1"}
             )
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             usage = client.usage.get()
             assert usage._request_id == "req_usage_1"
 
@@ -67,7 +73,7 @@ class TestSyncUsage:
         respx.get(f"{BASE}/v1/usage").mock(
             return_value=httpx.Response(200, json=data)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             usage = client.usage.get()
             assert usage.agents.limit is None
 
@@ -83,11 +89,13 @@ class TestAsyncUsage:
         respx.get(f"{BASE}/v1/usage").mock(
             return_value=httpx.Response(200, json=USAGE_DATA)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             usage = await client.usage.get()
             assert isinstance(usage, UsageResponse)
             assert usage.plan == "free"
             assert usage.agents.used == 3
+            assert usage.holds.created == 24
+            assert usage.cross_calendar_queries.used == 11
 
     @respx.mock
     async def test_request_id(self) -> None:
@@ -96,6 +104,6 @@ class TestAsyncUsage:
                 200, json=USAGE_DATA, headers={"X-Request-Id": "req_async_usage"}
             )
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             usage = await client.usage.get()
             assert usage._request_id == "req_async_usage"

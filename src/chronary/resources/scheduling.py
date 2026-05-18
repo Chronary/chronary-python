@@ -51,7 +51,6 @@ class ProposalSummary(ChronaryModel):
     participant_agent_ids: list[str]
     calendar_id: str
     status: ProposalStatus
-    is_test: bool = False
     expires_at: datetime | None = None
     resolved_slot: ProposalSlot | None = None
     created_event_id: str | None = None

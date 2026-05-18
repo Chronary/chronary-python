@@ -16,7 +16,7 @@ class TestSyncFeedback:
         route = respx.post(f"{BASE}/v1/feedback").mock(
             return_value=httpx.Response(202, json=ACCEPTED)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.feedback.submit(
                 type="bug",
                 message="Availability endpoint returns empty for UTC+13.",
@@ -32,7 +32,7 @@ class TestSyncFeedback:
         route = respx.post(f"{BASE}/v1/feedback").mock(
             return_value=httpx.Response(202, json=ACCEPTED)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             client.feedback.submit(
                 type="feature",
                 message="Expose a batch-create events endpoint please.",
@@ -49,7 +49,7 @@ class TestAsyncFeedback:
         route = respx.post(f"{BASE}/v1/feedback").mock(
             return_value=httpx.Response(202, json=ACCEPTED)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = await client.feedback.submit(
                 type="friction",
                 message="Friction submitting proposals when organizer is scoped key.",

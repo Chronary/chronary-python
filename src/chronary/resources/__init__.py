@@ -1,4 +1,5 @@
 from .account import Account, AsyncAccount
+from .audit_log import AsyncAuditLog, AuditLog
 from .agent_auth import AgentAuth, AsyncAgentAuth
 from .agents import Agents, AsyncAgents
 from .availability import AsyncAvailability, Availability
@@ -10,11 +11,14 @@ from .keys import AsyncKeys, Keys
 from .plans import AsyncPlans, Plans
 from .scheduling import AsyncScheduling, Scheduling
 from .usage import AsyncUsage, Usage
+from .waitlist import AsyncWaitlist, Waitlist
 from .webhooks import AsyncWebhooks, Webhooks
 
 __all__ = [
     "Account",
     "AsyncAccount",
+    "AuditLog",
+    "AsyncAuditLog",
     "AgentAuth",
     "AsyncAgentAuth",
     "Agents",
@@ -41,6 +45,8 @@ __all__ = [
     "AsyncScheduling",
     "Usage",
     "AsyncUsage",
+    "Waitlist",
+    "AsyncWaitlist",
     "Webhooks",
     "AsyncWebhooks",
 ]

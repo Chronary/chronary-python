@@ -17,7 +17,7 @@ Requires Python 3.10+.
 ```python
 from chronary import Chronary
 
-client = Chronary(api_key="chr_sk_live_...")
+client = Chronary(api_key="chr_sk_...")
 
 # Create a calendar
 calendar = client.calendars.create(name="Sales Team", timezone="America/New_York")
@@ -44,7 +44,7 @@ free_slots = client.availability.get(
 ```python
 from chronary import AsyncChronary
 
-async with AsyncChronary(api_key="chr_sk_live_...") as client:
+async with AsyncChronary(api_key="chr_sk_...") as client:
     agent = await client.agents.create(name="Support Bot", type="ai")
     calendars = await client.agents.calendars.list(agent.id)
 ```
@@ -54,7 +54,7 @@ async with AsyncChronary(api_key="chr_sk_live_...") as client:
 ### Environment variable
 
 ```bash
-export CHRONARY_API_KEY="chr_sk_live_..."
+export CHRONARY_API_KEY="chr_sk_..."
 ```
 
 ```python
@@ -66,7 +66,7 @@ client = Chronary()
 
 ```python
 client = Chronary(
-    api_key="chr_sk_live_...",
+    api_key="chr_sk_...",
     base_url="https://api.chronary.ai",  # default
     timeout=60.0,                         # seconds, default 60
     max_retries=2,                        # default 2
@@ -81,7 +81,7 @@ import httpx
 transport = httpx.HTTPTransport(retries=3)
 http_client = httpx.Client(transport=transport)
 
-client = Chronary(api_key="chr_sk_live_...", httpx_client=http_client)
+client = Chronary(api_key="chr_sk_...", httpx_client=http_client)
 ```
 
 ## Resources

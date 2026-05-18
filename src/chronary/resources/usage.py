@@ -15,6 +15,30 @@ class ResourceUsage(ChronaryModel):
     limit: int | None = None
 
 
+class HoldsUsage(ChronaryModel):
+    """Temporal-hold lifecycle counters.
+
+    Informational — not gated by any plan limit. The funnel identity
+    ``created == confirmed + expired + active`` holds, where ``active`` is
+    derived (not stored). Counts cover all three end-of-hold paths: TTL
+    expiry, manual release, and priority-bump.
+    """
+
+    created: int
+    confirmed: int
+    expired: int
+
+
+class CrossCalendarQueriesUsage(ChronaryModel):
+    """Availability requests that touched more than one calendar.
+
+    Informational — gated separately by the ``cross_calendar_availability``
+    capability, not by this counter.
+    """
+
+    used: int
+
+
 class UsageResponse(ChronaryModel):
     """Current billing-period usage for the organization."""
 
@@ -29,6 +53,8 @@ class UsageResponse(ChronaryModel):
     availability_queries: ResourceUsage
     ical_subscriptions: ResourceUsage
     proposals: ResourceUsage
+    holds: HoldsUsage
+    cross_calendar_queries: CrossCalendarQueriesUsage
 
 
 # ---------------------------------------------------------------------------

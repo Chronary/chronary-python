@@ -29,7 +29,11 @@ def _sign(payload: bytes, timestamp: str, secret: str = SECRET) -> str:
 
 def _valid_headers(payload: bytes, *, ts: int | None = None) -> dict[str, str]:
     ts_str = str(ts if ts is not None else int(time.time()))
-    return {"X-Signature": _sign(payload, ts_str), "X-Timestamp": ts_str}
+    return {
+        "X-Signature": _sign(payload, ts_str),
+        "X-Timestamp": ts_str,
+        "X-Chronary-Event-Type": "event.created",
+    }
 
 
 class TestVerifySignature:
@@ -122,17 +126,25 @@ class TestVerifySignature:
 
 class TestUnwrap:
     def test_returns_parsed_json_on_valid_signature(self) -> None:
-        event = {"id": "evt_1", "type": "event.created", "data": {"x": 1}}
-        payload = json.dumps(event).encode("utf-8")
+        event_payload = {"event": {"id": "evt_1"}, "x": 1}
+        payload = json.dumps(event_payload).encode("utf-8")
         result = unwrap(payload, _valid_headers(payload), secret=SECRET)
-        assert result == event
+        assert result == {"type": "event.created", "data": event_payload}
 
     def test_accepts_string_payload(self) -> None:
-        event = {"id": "evt_1", "type": "event.created"}
-        payload_str = json.dumps(event)
+        event_payload = {"event": {"id": "evt_1"}}
+        payload_str = json.dumps(event_payload)
         payload_bytes = payload_str.encode("utf-8")
         result = unwrap(payload_str, _valid_headers(payload_bytes), secret=SECRET)
         assert result["type"] == "event.created"
+        assert result["data"] == event_payload
+
+    def test_requires_event_type_header(self) -> None:
+        payload = b'{"event":{"id":"evt_1"}}'
+        headers = _valid_headers(payload)
+        del headers["X-Chronary-Event-Type"]
+        with pytest.raises(SignatureVerificationError, match="X-Chronary-Event-Type"):
+            unwrap(payload, headers, secret=SECRET)
 
     def test_raises_on_bad_signature(self) -> None:
         payload = b'{"type":"event.created"}'

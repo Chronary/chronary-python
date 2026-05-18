@@ -144,14 +144,15 @@ def unwrap(
     secret: str,
     tolerance: int = 300,
 ) -> dict[str, Any]:
-    """Verify a webhook and return its parsed JSON body.
+    """Verify a webhook and return ``{"type": event_type, "data": payload}``.
 
     Combines ``verify_signature`` with JSON parsing so you can go from raw
-    request to validated event in one call.
+    request to an event envelope in one call. Chronary sends the event type in
+    ``X-Chronary-Event-Type`` and the raw event payload as the body.
 
     Returns:
-        The parsed JSON payload as a dict. Every Chronary webhook carries
-        ``type``, ``data``, and ``id`` fields — see the Webhooks API reference.
+        A dict with ``type`` from the header and ``data`` containing the parsed
+        JSON payload.
 
     Raises:
         SignatureVerificationError: If signature verification fails.
@@ -159,9 +160,13 @@ def unwrap(
     """
     verify_signature(payload, headers, secret=secret, tolerance=tolerance)
 
+    event_type = _get_header(headers, "X-Chronary-Event-Type")
+    if not event_type:
+        raise SignatureVerificationError("Missing X-Chronary-Event-Type header")
+
     if isinstance(payload, (bytes, bytearray)):
         payload_str = bytes(payload).decode("utf-8")
     else:
         payload_str = payload
 
-    return json.loads(payload_str)
+    return {"type": event_type, "data": json.loads(payload_str)}

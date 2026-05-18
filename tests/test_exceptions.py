@@ -40,7 +40,7 @@ class TestSyncExceptions:
         respx.get(f"{BASE}/v1/agents/agt_1").mock(
             return_value=httpx.Response(400, json=body)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=0) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=0) as client:
             with pytest.raises(BadRequestError) as exc_info:
                 client.agents.get("agt_1")
             err = exc_info.value
@@ -55,7 +55,7 @@ class TestSyncExceptions:
         respx.get(f"{BASE}/v1/agents/agt_1").mock(
             return_value=httpx.Response(401, json=body)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=0) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=0) as client:
             with pytest.raises(AuthenticationError) as exc_info:
                 client.agents.get("agt_1")
             assert exc_info.value.status_code == 401
@@ -67,7 +67,7 @@ class TestSyncExceptions:
         respx.get(f"{BASE}/v1/agents/agt_1").mock(
             return_value=httpx.Response(403, json=body)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=0) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=0) as client:
             with pytest.raises(PermissionDeniedError) as exc_info:
                 client.agents.get("agt_1")
             assert exc_info.value.status_code == 403
@@ -78,7 +78,7 @@ class TestSyncExceptions:
         respx.get(f"{BASE}/v1/agents/agt_1").mock(
             return_value=httpx.Response(404, json=body)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=0) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=0) as client:
             with pytest.raises(NotFoundError) as exc_info:
                 client.agents.get("agt_1")
             assert exc_info.value.status_code == 404
@@ -89,7 +89,7 @@ class TestSyncExceptions:
         respx.get(f"{BASE}/v1/agents/agt_1").mock(
             return_value=httpx.Response(429, json=body)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=0) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=0) as client:
             with pytest.raises(RateLimitError) as exc_info:
                 client.agents.get("agt_1")
             assert exc_info.value.status_code == 429
@@ -101,7 +101,7 @@ class TestSyncExceptions:
         respx.get(f"{BASE}/v1/agents/agt_1").mock(
             return_value=httpx.Response(429, json=body)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=0) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=0) as client:
             with pytest.raises(QuotaExceededError) as exc_info:
                 client.agents.get("agt_1")
             assert exc_info.value.status_code == 429
@@ -114,7 +114,7 @@ class TestSyncExceptions:
         respx.get(f"{BASE}/v1/agents/agt_1").mock(
             return_value=httpx.Response(500, json=body)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=0) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=0) as client:
             with pytest.raises(InternalServerError) as exc_info:
                 client.agents.get("agt_1")
             assert exc_info.value.status_code == 500
@@ -126,7 +126,7 @@ class TestSyncExceptions:
             return_value=httpx.Response(502, json=body)
         )
         with (
-            Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=0) as client,
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=0) as client,
             pytest.raises(InternalServerError),
         ):
             client.agents.get("agt_1")
@@ -137,7 +137,7 @@ class TestSyncExceptions:
         respx.get(f"{BASE}/v1/agents/agt_1").mock(
             return_value=httpx.Response(418, json=body)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=0) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=0) as client:
             with pytest.raises(APIStatusError) as exc_info:
                 client.agents.get("agt_1")
             assert exc_info.value.status_code == 418
@@ -152,7 +152,7 @@ class TestAsyncExceptions:
             return_value=httpx.Response(400, json=body)
         )
         async with AsyncChronary(
-            api_key="chr_sk_test_x", base_url=BASE, max_retries=0
+            api_key="chr_sk_x", base_url=BASE, max_retries=0
         ) as client:
             with pytest.raises(BadRequestError) as exc_info:
                 await client.agents.get("agt_1")
@@ -166,7 +166,7 @@ class TestAsyncExceptions:
             return_value=httpx.Response(429, json=rl_body)
         )
         async with AsyncChronary(
-            api_key="chr_sk_test_x", base_url=BASE, max_retries=0
+            api_key="chr_sk_x", base_url=BASE, max_retries=0
         ) as client:
             with pytest.raises(RateLimitError):
                 await client.agents.get("agt_1")

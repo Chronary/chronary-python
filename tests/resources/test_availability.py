@@ -67,7 +67,7 @@ class TestSyncAvailability:
         respx.get(f"{BASE}/v1/agents/agt_abc123/availability").mock(
             return_value=httpx.Response(200, json=AGENT_AVAIL_DATA)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.availability.get(
                 "agt_abc123",
                 start="2026-03-28T09:00:00Z",
@@ -84,7 +84,7 @@ class TestSyncAvailability:
         respx.get(f"{BASE}/v1/agents/agt_abc123/availability").mock(
             return_value=httpx.Response(200, json=AGENT_AVAIL_WITH_BUSY)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.availability.get(
                 "agt_abc123",
                 start="2026-03-28T09:00:00Z",
@@ -100,7 +100,7 @@ class TestSyncAvailability:
         respx.get(f"{BASE}/v1/calendars/cal_abc123/availability").mock(
             return_value=httpx.Response(200, json=CALENDAR_AVAIL_DATA)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.availability.get_calendar(
                 "cal_abc123",
                 start="2026-03-28T09:00:00Z",
@@ -116,7 +116,7 @@ class TestSyncAvailability:
         respx.get(f"{BASE}/v1/calendars/cal_abc123/availability").mock(
             return_value=httpx.Response(200, json=CALENDAR_AVAIL_WITH_BUSY)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.availability.get_calendar(
                 "cal_abc123",
                 start="2026-03-28T09:00:00Z",
@@ -131,7 +131,7 @@ class TestSyncAvailability:
         respx.get(f"{BASE}/v1/availability").mock(
             return_value=httpx.Response(200, json=CROSS_AVAIL_DATA)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.availability.find_meeting_time(
                 agents=["agt_1", "agt_2"],
                 start="2026-03-28T09:00:00Z",
@@ -149,7 +149,7 @@ class TestSyncAvailability:
                 200, json=AGENT_AVAIL_DATA, headers={"X-Request-Id": "req_avail_1"}
             )
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.availability.get(
                 "agt_abc123",
                 start="2026-03-28T09:00:00Z",
@@ -163,7 +163,7 @@ class TestSyncAvailability:
         respx.get(f"{BASE}/v1/agents/agt_abc123/availability").mock(
             return_value=httpx.Response(200, json=AGENT_AVAIL_DATA)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.agents.availability.get(
                 "agt_abc123",
                 start="2026-03-28T09:00:00Z",
@@ -184,7 +184,7 @@ class TestAsyncAvailability:
         respx.get(f"{BASE}/v1/agents/agt_abc123/availability").mock(
             return_value=httpx.Response(200, json=AGENT_AVAIL_DATA)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = await client.availability.get(
                 "agt_abc123",
                 start="2026-03-28T09:00:00Z",
@@ -198,7 +198,7 @@ class TestAsyncAvailability:
         respx.get(f"{BASE}/v1/calendars/cal_abc123/availability").mock(
             return_value=httpx.Response(200, json=CALENDAR_AVAIL_DATA)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = await client.availability.get_calendar(
                 "cal_abc123",
                 start="2026-03-28T09:00:00Z",
@@ -212,7 +212,7 @@ class TestAsyncAvailability:
         respx.get(f"{BASE}/v1/availability").mock(
             return_value=httpx.Response(200, json=CROSS_AVAIL_DATA)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = await client.availability.find_meeting_time(
                 agents=["agt_1", "agt_2"],
                 start="2026-03-28T09:00:00Z",

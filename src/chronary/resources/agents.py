@@ -111,6 +111,11 @@ class Agents(SyncAPIResource):
         metadata: dict[str, Any] | None = None,
         max_retries: int | None = None,
     ) -> Agent:
+        """Register your agent with Chronary.
+
+        Creates a Chronary identity for an agent that already exists in your system,
+        so it can own calendars, events, and webhooks.
+        """
         body: dict[str, Any] = {"name": name, "type": type}
         if description is not None:
             body["description"] = description
@@ -238,6 +243,11 @@ class AsyncAgents(AsyncAPIResource):
         metadata: dict[str, Any] | None = None,
         max_retries: int | None = None,
     ) -> Agent:
+        """Register your agent with Chronary.
+
+        Creates a Chronary identity for an agent that already exists in your system,
+        so it can own calendars, events, and webhooks.
+        """
         body: dict[str, Any] = {"name": name, "type": type}
         if description is not None:
             body["description"] = description

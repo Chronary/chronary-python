@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime  # noqa: TCH003 -- Pydantic needs this at runtime
-from typing import Any, Literal
+from typing import Any
 
 from typing_extensions import NotRequired, Required, TypedDict
 
@@ -13,7 +13,6 @@ class ScopedApiKey(ChronaryModel):
     """An agent-scoped API key."""
 
     id: str
-    mode: Literal["live", "test"]
     key_prefix: str
     agent_id: str
     label: str | None = None
@@ -28,7 +27,6 @@ class CreatedScopedApiKey(ScopedApiKey):
 
 class ScopedApiKeyCreateParams(TypedDict):
     agent_id: Required[str]
-    mode: Required[Literal["live", "test"]]
     label: NotRequired[str]
 
 
@@ -42,11 +40,10 @@ class Keys(SyncAPIResource):
         self,
         *,
         agent_id: str,
-        mode: Literal["live", "test"],
         label: str | None = None,
         max_retries: int | None = None,
     ) -> CreatedScopedApiKey:
-        body: dict[str, Any] = {"agent_id": agent_id, "mode": mode}
+        body: dict[str, Any] = {"agent_id": agent_id}
         if label is not None:
             body["label"] = label
         resp = self._request("POST", _KEYS_PATH, json=body, max_retries=max_retries)
@@ -88,11 +85,10 @@ class AsyncKeys(AsyncAPIResource):
         self,
         *,
         agent_id: str,
-        mode: Literal["live", "test"],
         label: str | None = None,
         max_retries: int | None = None,
     ) -> CreatedScopedApiKey:
-        body: dict[str, Any] = {"agent_id": agent_id, "mode": mode}
+        body: dict[str, Any] = {"agent_id": agent_id}
         if label is not None:
             body["label"] = label
         resp = await self._request(

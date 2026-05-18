@@ -18,8 +18,11 @@ from .resources import (
     AsyncKeys,
     AsyncPlans,
     AsyncScheduling,
+    AsyncAuditLog,
     AsyncUsage,
+    AsyncWaitlist,
     AsyncWebhooks,
+    AuditLog,
     Availability,
     Calendars,
     Events,
@@ -29,6 +32,7 @@ from .resources import (
     Plans,
     Scheduling,
     Usage,
+    Waitlist,
     Webhooks,
 )
 
@@ -47,10 +51,12 @@ class Chronary(SyncAPIClient):
     _availability: Availability | None
     _scheduling: Scheduling | None
     _usage: Usage | None
+    _audit_log: AuditLog | None
     _keys: Keys | None
     _feedback: Feedback | None
     _plans: Plans | None
     _agent_auth: AgentAuth | None
+    _waitlist: Waitlist | None
     _account: Account | None
 
     def __init__(
@@ -79,10 +85,12 @@ class Chronary(SyncAPIClient):
         self._availability = None
         self._scheduling = None
         self._usage = None
+        self._audit_log = None
         self._keys = None
         self._feedback = None
         self._plans = None
         self._agent_auth = None
+        self._waitlist = None
         self._account = None
 
     @property
@@ -134,6 +142,12 @@ class Chronary(SyncAPIClient):
         return self._usage
 
     @property
+    def audit_log(self) -> AuditLog:
+        if self._audit_log is None:
+            self._audit_log = AuditLog(self)
+        return self._audit_log
+
+    @property
     def keys(self) -> Keys:
         if self._keys is None:
             self._keys = Keys(self)
@@ -156,6 +170,12 @@ class Chronary(SyncAPIClient):
         if self._agent_auth is None:
             self._agent_auth = AgentAuth(self)
         return self._agent_auth
+
+    @property
+    def waitlist(self) -> Waitlist:
+        if self._waitlist is None:
+            self._waitlist = Waitlist(self)
+        return self._waitlist
 
     @property
     def account(self) -> Account:
@@ -181,10 +201,12 @@ class AsyncChronary(AsyncAPIClient):
     _availability: AsyncAvailability | None
     _scheduling: AsyncScheduling | None
     _usage: AsyncUsage | None
+    _audit_log: AsyncAuditLog | None
     _keys: AsyncKeys | None
     _feedback: AsyncFeedback | None
     _plans: AsyncPlans | None
     _agent_auth: AsyncAgentAuth | None
+    _waitlist: AsyncWaitlist | None
     _account: AsyncAccount | None
 
     def __init__(
@@ -213,10 +235,12 @@ class AsyncChronary(AsyncAPIClient):
         self._availability = None
         self._scheduling = None
         self._usage = None
+        self._audit_log = None
         self._keys = None
         self._feedback = None
         self._plans = None
         self._agent_auth = None
+        self._waitlist = None
         self._account = None
 
     @property
@@ -268,6 +292,12 @@ class AsyncChronary(AsyncAPIClient):
         return self._usage
 
     @property
+    def audit_log(self) -> AsyncAuditLog:
+        if self._audit_log is None:
+            self._audit_log = AsyncAuditLog(self)
+        return self._audit_log
+
+    @property
     def keys(self) -> AsyncKeys:
         if self._keys is None:
             self._keys = AsyncKeys(self)
@@ -290,6 +320,12 @@ class AsyncChronary(AsyncAPIClient):
         if self._agent_auth is None:
             self._agent_auth = AsyncAgentAuth(self)
         return self._agent_auth
+
+    @property
+    def waitlist(self) -> AsyncWaitlist:
+        if self._waitlist is None:
+            self._waitlist = AsyncWaitlist(self)
+        return self._waitlist
 
     @property
     def account(self) -> AsyncAccount:

@@ -18,8 +18,7 @@ BASE = "https://api.chronary.ai"
 NEW_ORG_RESPONSE = {
     "org_id": "org_abc123",
     "agent_id": "agt_abc123",
-    "api_key": "chr_sk_live_restricted_abc",
-    "test_api_key": "chr_sk_test_abc",
+    "api_key": "chr_sk_restricted_abc",
     "message": "Verification code sent to email",
 }
 
@@ -42,8 +41,7 @@ class TestSyncAgentAuth:
 
         assert isinstance(result, AgentSignUpResponse)
         assert result.is_new_org is True
-        assert result.api_key == "chr_sk_live_restricted_abc"
-        assert result.test_api_key == "chr_sk_test_abc"
+        assert result.api_key == "chr_sk_restricted_abc"
         assert result.org_id == "org_abc123"
         assert route.called
 
@@ -101,7 +99,7 @@ class TestSyncAgentAuth:
                 200, json={"verified": True, "message": "Full access unlocked"}
             )
         )
-        with Chronary(api_key="chr_sk_live_restricted_abc", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_restricted_abc", base_url=BASE) as client:
             result = client.agent_auth.verify(otp="123456")
 
         assert isinstance(result, AgentVerifyResponse)
@@ -110,7 +108,7 @@ class TestSyncAgentAuth:
         assert route.called
 
         req = route.calls.last.request
-        assert req.headers["Authorization"] == "Bearer chr_sk_live_restricted_abc"
+        assert req.headers["Authorization"] == "Bearer chr_sk_restricted_abc"
         sent = req.content.decode()
         assert "123456" in sent
 
@@ -129,7 +127,7 @@ class TestSyncAgentAuth:
             )
         )
         with Chronary(
-            api_key="chr_sk_live_restricted_abc", base_url=BASE, max_retries=0
+            api_key="chr_sk_restricted_abc", base_url=BASE, max_retries=0
         ) as client:
             with pytest.raises(BadRequestError, match="Invalid or expired"):
                 client.agent_auth.verify(otp="000000")
@@ -148,7 +146,7 @@ class TestAsyncAgentAuth:
                 tos_version="2026-04-17",
             )
         assert result.is_new_org is True
-        assert result.api_key == "chr_sk_live_restricted_abc"
+        assert result.api_key == "chr_sk_restricted_abc"
 
     @respx.mock
     async def test_verify(self) -> None:
@@ -158,7 +156,7 @@ class TestAsyncAgentAuth:
             )
         )
         async with AsyncChronary(
-            api_key="chr_sk_live_restricted_abc", base_url=BASE
+            api_key="chr_sk_restricted_abc", base_url=BASE
         ) as client:
             result = await client.agent_auth.verify(otp="123456")
         assert result.verified is True

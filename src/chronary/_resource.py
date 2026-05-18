@@ -28,9 +28,15 @@ class SyncAPIResource:
         json: Any | None = None,
         params: dict[str, Any] | None = None,
         max_retries: int | None = None,
+        idempotency_key: str | None = None,
     ) -> httpx.Response:
         return self._client._request(
-            method, path, json=json, params=params, max_retries=max_retries
+            method,
+            path,
+            json=json,
+            params=params,
+            max_retries=max_retries,
+            idempotency_key=idempotency_key,
         )
 
     def _build(self, model_cls: type[_T], response: httpx.Response) -> _T:
@@ -58,9 +64,15 @@ class AsyncAPIResource:
         json: Any | None = None,
         params: dict[str, Any] | None = None,
         max_retries: int | None = None,
+        idempotency_key: str | None = None,
     ) -> httpx.Response:
         return await self._client._request(
-            method, path, json=json, params=params, max_retries=max_retries
+            method,
+            path,
+            json=json,
+            params=params,
+            max_retries=max_retries,
+            idempotency_key=idempotency_key,
         )
 
     def _build(self, model_cls: type[_T], response: httpx.Response) -> _T:

@@ -39,7 +39,7 @@ class TestSyncICalSubscriptions:
         respx.post(f"{BASE}/v1/agents/agt_abc123/ical-subscriptions").mock(
             return_value=httpx.Response(201, json=ICAL_SUB_DATA)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             sub = client.ical_subscriptions.create(
                 "agt_abc123",
                 calendar_id="cal_abc123",
@@ -57,7 +57,7 @@ class TestSyncICalSubscriptions:
         respx.get(f"{BASE}/v1/agents/agt_abc123/ical-subscriptions").mock(
             return_value=httpx.Response(200, json=LIST_RESPONSE)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             pager = client.ical_subscriptions.list("agt_abc123")
             assert isinstance(pager, SyncPager)
             assert len(pager.data) == 1
@@ -67,7 +67,7 @@ class TestSyncICalSubscriptions:
         respx.get(f"{BASE}/v1/ical-subscriptions/ics_abc123").mock(
             return_value=httpx.Response(200, json=ICAL_SUB_DATA)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             sub = client.ical_subscriptions.get("ics_abc123")
             assert sub.id == "ics_abc123"
             assert sub.status == "active"
@@ -78,7 +78,7 @@ class TestSyncICalSubscriptions:
         respx.patch(f"{BASE}/v1/ical-subscriptions/ics_abc123").mock(
             return_value=httpx.Response(200, json=updated)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             sub = client.ical_subscriptions.update("ics_abc123", label="New Label")
             assert sub.label == "New Label"
 
@@ -87,7 +87,7 @@ class TestSyncICalSubscriptions:
         respx.delete(f"{BASE}/v1/ical-subscriptions/ics_abc123").mock(
             return_value=httpx.Response(204)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.ical_subscriptions.delete("ics_abc123")
             assert result is None
 
@@ -96,7 +96,7 @@ class TestSyncICalSubscriptions:
         respx.post(f"{BASE}/v1/ical-subscriptions/ics_abc123/sync").mock(
             return_value=httpx.Response(202, json={"status": "syncing"})
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.ical_subscriptions.sync("ics_abc123")
             assert result is None
 
@@ -107,7 +107,7 @@ class TestSyncICalSubscriptions:
                 200, json=ICAL_SUB_DATA, headers={"X-Request-Id": "req_ics_1"}
             )
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             sub = client.ical_subscriptions.get("ics_abc123")
             assert sub._request_id == "req_ics_1"
 
@@ -123,7 +123,7 @@ class TestAsyncICalSubscriptions:
         respx.post(f"{BASE}/v1/agents/agt_abc123/ical-subscriptions").mock(
             return_value=httpx.Response(201, json=ICAL_SUB_DATA)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             sub = await client.ical_subscriptions.create(
                 "agt_abc123",
                 calendar_id="cal_abc123",
@@ -137,7 +137,7 @@ class TestAsyncICalSubscriptions:
         respx.get(f"{BASE}/v1/agents/agt_abc123/ical-subscriptions").mock(
             return_value=httpx.Response(200, json=LIST_RESPONSE)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             pager = await client.ical_subscriptions.list("agt_abc123")
             assert isinstance(pager, AsyncPager)
             assert len(pager.data) == 1
@@ -147,7 +147,7 @@ class TestAsyncICalSubscriptions:
         respx.get(f"{BASE}/v1/ical-subscriptions/ics_abc123").mock(
             return_value=httpx.Response(200, json=ICAL_SUB_DATA)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             sub = await client.ical_subscriptions.get("ics_abc123")
             assert sub.id == "ics_abc123"
 
@@ -157,7 +157,7 @@ class TestAsyncICalSubscriptions:
         respx.patch(f"{BASE}/v1/ical-subscriptions/ics_abc123").mock(
             return_value=httpx.Response(200, json=updated)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             sub = await client.ical_subscriptions.update(
                 "ics_abc123", url="https://new.example.com/cal.ics"
             )
@@ -168,7 +168,7 @@ class TestAsyncICalSubscriptions:
         respx.delete(f"{BASE}/v1/ical-subscriptions/ics_abc123").mock(
             return_value=httpx.Response(204)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = await client.ical_subscriptions.delete("ics_abc123")
             assert result is None
 
@@ -177,6 +177,6 @@ class TestAsyncICalSubscriptions:
         respx.post(f"{BASE}/v1/ical-subscriptions/ics_abc123/sync").mock(
             return_value=httpx.Response(202, json={"status": "syncing"})
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = await client.ical_subscriptions.sync("ics_abc123")
             assert result is None

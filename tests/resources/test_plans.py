@@ -48,13 +48,13 @@ CATALOG_FIXTURE = {
             "recommended": True,
         },
         {
-            "id": "enterprise",
-            "name": "Enterprise",
+            "id": "custom",
+            "name": "Custom",
             "tagline": "Custom limits, dedicated SLA",
             "price": None,
             "currency": None,
             "limits": None,
-            "display_features": ["Everything in Scale"],
+            "display_features": ["Custom volume limits"],
             "recommended": False,
             "custom_pricing": True,
             "contact_url": "https://chronary.ai/contact",
@@ -69,7 +69,7 @@ class TestSyncPlans:
         route = respx.get(f"{BASE}/v1/plans").mock(
             return_value=httpx.Response(200, json=CATALOG_FIXTURE)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.plans.list()
         assert isinstance(result, PlansListResponse)
         assert len(result.plans) == 3
@@ -80,13 +80,13 @@ class TestSyncPlans:
         assert route.called
 
     @respx.mock
-    def test_enterprise_tier_has_custom_pricing(self) -> None:
+    def test_custom_tier_has_custom_pricing(self) -> None:
         respx.get(f"{BASE}/v1/plans").mock(
             return_value=httpx.Response(200, json=CATALOG_FIXTURE)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.plans.list()
-        ent = next(p for p in result.plans if p.id == "enterprise")
+        ent = next(p for p in result.plans if p.id == "custom")
         assert ent.custom_pricing is True
         assert ent.price is None
         assert ent.currency is None
@@ -112,7 +112,7 @@ class TestAsyncPlans:
         respx.get(f"{BASE}/v1/plans").mock(
             return_value=httpx.Response(200, json=CATALOG_FIXTURE)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = await client.plans.list()
         assert len(result.plans) == 3
         assert result.plans[0].id == "free"

@@ -20,7 +20,6 @@ CALENDAR_DATA = {
     "timezone": "America/New_York",
     "agentId": "agt_abc123",
     "metadata": {},
-    "isTest": False,
     "ical_url": "https://ical.chronary.ai/ical/TOKEN.ics",
     "createdAt": "2026-01-15T10:30:00Z",
     "updatedAt": "2026-01-15T10:30:00Z",
@@ -45,7 +44,7 @@ class TestSyncCalendars:
         respx.post(f"{BASE}/v1/calendars").mock(
             return_value=httpx.Response(201, json=CALENDAR_DATA)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             cal = client.calendars.create(name="Sales Agent Calendar", timezone="America/New_York")
             assert isinstance(cal, Calendar)
             assert cal.id == "cal_abc123"
@@ -57,7 +56,7 @@ class TestSyncCalendars:
         respx.get(f"{BASE}/v1/calendars").mock(
             return_value=httpx.Response(200, json=LIST_RESPONSE)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             pager = client.calendars.list()
             assert isinstance(pager, SyncPager)
             assert len(pager.data) == 1
@@ -68,7 +67,7 @@ class TestSyncCalendars:
         respx.get(f"{BASE}/v1/calendars/cal_abc123").mock(
             return_value=httpx.Response(200, json=CALENDAR_DATA)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             cal = client.calendars.get("cal_abc123")
             assert cal.id == "cal_abc123"
             assert cal.agent_id == "agt_abc123"
@@ -79,7 +78,7 @@ class TestSyncCalendars:
         respx.patch(f"{BASE}/v1/calendars/cal_abc123").mock(
             return_value=httpx.Response(200, json=updated)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             cal = client.calendars.update("cal_abc123", name="Renamed")
             assert cal.name == "Renamed"
 
@@ -88,7 +87,7 @@ class TestSyncCalendars:
         respx.delete(f"{BASE}/v1/calendars/cal_abc123").mock(
             return_value=httpx.Response(204)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.calendars.delete("cal_abc123")
             assert result is None
 
@@ -99,7 +98,7 @@ class TestSyncCalendars:
                 200, json=CALENDAR_DATA, headers={"X-Request-Id": "req_cal_1"}
             )
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             cal = client.calendars.get("cal_abc123")
             assert cal._request_id == "req_cal_1"
 
@@ -119,7 +118,7 @@ class TestSyncCalendars:
                 },
             )
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             ctx = client.calendars.get_context("cal_abc123")
             assert isinstance(ctx, CalendarContext)
             assert ctx.calendar_id == "cal_abc123"
@@ -140,7 +139,7 @@ class TestSyncCalendars:
         respx.put(f"{BASE}/v1/calendars/cal_abc123/availability-rules").mock(
             return_value=httpx.Response(200, json=rules)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.calendars.set_availability_rules(
                 "cal_abc123", buffer_before_minutes=10, buffer_after_minutes=15
             )
@@ -162,7 +161,7 @@ class TestSyncCalendars:
         respx.get(f"{BASE}/v1/calendars/cal_abc123/availability-rules").mock(
             return_value=httpx.Response(200, json=rules)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.calendars.get_availability_rules("cal_abc123")
             assert result.id == "rul_1"
 
@@ -171,7 +170,7 @@ class TestSyncCalendars:
         respx.delete(f"{BASE}/v1/calendars/cal_abc123/availability-rules").mock(
             return_value=httpx.Response(204)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.calendars.delete_availability_rules("cal_abc123")
             assert result is None
 
@@ -187,7 +186,7 @@ class TestSyncAgentCalendars:
         respx.post(f"{BASE}/v1/agents/agt_abc123/calendars").mock(
             return_value=httpx.Response(201, json=CALENDAR_DATA)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             cal = client.agents.calendars.create(
                 "agt_abc123", name="Sales Agent Calendar", timezone="America/New_York"
             )
@@ -199,7 +198,7 @@ class TestSyncAgentCalendars:
         respx.get(f"{BASE}/v1/agents/agt_abc123/calendars").mock(
             return_value=httpx.Response(200, json=LIST_RESPONSE)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             pager = client.agents.calendars.list("agt_abc123")
             assert isinstance(pager, SyncPager)
             assert len(pager.data) == 1
@@ -216,7 +215,7 @@ class TestAsyncCalendars:
         respx.post(f"{BASE}/v1/calendars").mock(
             return_value=httpx.Response(201, json=CALENDAR_DATA)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             cal = await client.calendars.create(
                 name="Sales Agent Calendar", timezone="America/New_York"
             )
@@ -228,7 +227,7 @@ class TestAsyncCalendars:
         respx.get(f"{BASE}/v1/calendars").mock(
             return_value=httpx.Response(200, json=LIST_RESPONSE)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             pager = await client.calendars.list()
             assert isinstance(pager, AsyncPager)
             assert len(pager.data) == 1
@@ -238,7 +237,7 @@ class TestAsyncCalendars:
         respx.get(f"{BASE}/v1/calendars/cal_abc123").mock(
             return_value=httpx.Response(200, json=CALENDAR_DATA)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             cal = await client.calendars.get("cal_abc123")
             assert cal.id == "cal_abc123"
 
@@ -248,7 +247,7 @@ class TestAsyncCalendars:
         respx.patch(f"{BASE}/v1/calendars/cal_abc123").mock(
             return_value=httpx.Response(200, json=updated)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             cal = await client.calendars.update("cal_abc123", name="Renamed")
             assert cal.name == "Renamed"
 
@@ -257,7 +256,7 @@ class TestAsyncCalendars:
         respx.delete(f"{BASE}/v1/calendars/cal_abc123").mock(
             return_value=httpx.Response(204)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = await client.calendars.delete("cal_abc123")
             assert result is None
 
@@ -268,7 +267,7 @@ class TestAsyncAgentCalendars:
         respx.post(f"{BASE}/v1/agents/agt_abc123/calendars").mock(
             return_value=httpx.Response(201, json=CALENDAR_DATA)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             cal = await client.agents.calendars.create(
                 "agt_abc123", name="Sales Agent Calendar", timezone="America/New_York"
             )
@@ -279,7 +278,7 @@ class TestAsyncAgentCalendars:
         respx.get(f"{BASE}/v1/agents/agt_abc123/calendars").mock(
             return_value=httpx.Response(200, json=LIST_RESPONSE)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             pager = await client.agents.calendars.list("agt_abc123")
             assert isinstance(pager, AsyncPager)
             assert len(pager.data) == 1

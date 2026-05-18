@@ -37,7 +37,7 @@ class TestSyncRetry:
             ]
         )
         with (
-            Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=1) as client,
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=1) as client,
             patch("chronary._base_client.time.sleep"),
         ):
             agent = client.agents.get("agt_abc123")
@@ -53,7 +53,7 @@ class TestSyncRetry:
             ]
         )
         with (
-            Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=1) as client,
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=1) as client,
             patch("chronary._base_client.time.sleep"),
         ):
             agent = client.agents.get("agt_abc123")
@@ -71,7 +71,7 @@ class TestSyncRetry:
             ]
         )
         with (
-            Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=1) as client,
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=1) as client,
             patch("chronary._base_client.time.sleep") as mock_sleep,
         ):
             client.agents.get("agt_abc123")
@@ -88,7 +88,7 @@ class TestSyncRetry:
             ]
         )
         with (
-            Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=2) as client,
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=2) as client,
             patch("chronary._base_client.time.sleep"),
             pytest.raises(InternalServerError),
         ):
@@ -104,7 +104,7 @@ class TestSyncRetry:
             ]
         )
         with (
-            Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=5) as client,
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=5) as client,
             patch("chronary._base_client.time.sleep"),
             pytest.raises(InternalServerError),
         ):
@@ -117,7 +117,7 @@ class TestSyncRetry:
             side_effect=httpx.ReadTimeout("Timed out", request=request)
         )
         with Chronary(
-            api_key="chr_sk_test_x", base_url=BASE, max_retries=0
+            api_key="chr_sk_x", base_url=BASE, max_retries=0
         ) as client, pytest.raises(APITimeoutError):
             client.agents.get("agt_abc123")
 
@@ -136,7 +136,7 @@ class TestAsyncRetry:
             ]
         )
         async with AsyncChronary(
-            api_key="chr_sk_test_x", base_url=BASE, max_retries=1
+            api_key="chr_sk_x", base_url=BASE, max_retries=1
         ) as client:
             with patch("chronary._base_client._async_sleep"):
                 agent = await client.agents.get("agt_abc123")
@@ -153,7 +153,7 @@ class TestAsyncRetry:
             ]
         )
         async with AsyncChronary(
-            api_key="chr_sk_test_x", base_url=BASE, max_retries=1
+            api_key="chr_sk_x", base_url=BASE, max_retries=1
         ) as client:
             with patch("chronary._base_client._async_sleep"):
                 with pytest.raises(InternalServerError):
@@ -167,7 +167,7 @@ class TestAsyncRetry:
             side_effect=httpx.ReadTimeout("Timed out", request=request)
         )
         async with AsyncChronary(
-            api_key="chr_sk_test_x", base_url=BASE, max_retries=0
+            api_key="chr_sk_x", base_url=BASE, max_retries=0
         ) as client:
             with pytest.raises(APITimeoutError):
                 await client.agents.get("agt_abc123")
@@ -183,7 +183,7 @@ class TestAsyncRetry:
             ]
         )
         async with AsyncChronary(
-            api_key="chr_sk_test_x", base_url=BASE, max_retries=1
+            api_key="chr_sk_x", base_url=BASE, max_retries=1
         ) as client:
             with patch("chronary._base_client._async_sleep"):
                 agent = await client.agents.get("agt_abc123")
@@ -200,12 +200,14 @@ class TestAsyncRetry:
             ]
         )
         async with AsyncChronary(
-            api_key="chr_sk_test_x", base_url=BASE, max_retries=1
+            api_key="chr_sk_x", base_url=BASE, max_retries=1
         ) as client:
             with patch("chronary._base_client._async_sleep"):
                 await client.agents.create(name="My Agent", type="ai")
+                first_req = route.calls[0].request
                 retry_req = route.calls[1].request
-                assert "Idempotency-Key" in retry_req.headers
+                assert "Idempotency-Key" in first_req.headers
+                assert retry_req.headers["Idempotency-Key"] == first_req.headers["Idempotency-Key"]
 
 
 class TestSleepTime:
@@ -234,14 +236,37 @@ class TestSyncIdempotency:
             ]
         )
         with (
-            Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=1) as client,
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=1) as client,
             patch("chronary._base_client.time.sleep"),
         ):
             client.agents.create(name="My Agent", type="ai")
             first_req = route.calls[0].request
             retry_req = route.calls[1].request
-            assert "Idempotency-Key" not in first_req.headers
             assert "Idempotency-Key" in retry_req.headers
+            assert retry_req.headers["Idempotency-Key"] == first_req.headers["Idempotency-Key"]
+
+    @respx.mock
+    def test_mutating_methods_send_idempotency_key_on_first_attempt(self) -> None:
+        route = respx.patch(f"{BASE}/v1/agents/agt_abc123").mock(
+            return_value=httpx.Response(200, json=AGENT_DATA)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=0) as client:
+            client.agents.update("agt_abc123", name="Renamed")
+            assert "Idempotency-Key" in route.calls[0].request.headers
+
+    @respx.mock
+    def test_low_level_idempotency_key_override(self) -> None:
+        route = respx.post(f"{BASE}/v1/agents").mock(
+            return_value=httpx.Response(201, json=AGENT_DATA)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=0) as client:
+            client._request(
+                "POST",
+                "/v1/agents",
+                json={"name": "My Agent", "type": "ai"},
+                idempotency_key="idem_custom",
+            )
+            assert route.calls[0].request.headers["Idempotency-Key"] == "idem_custom"
 
     @respx.mock
     def test_connect_error_retry(self) -> None:
@@ -253,7 +278,7 @@ class TestSyncIdempotency:
             ]
         )
         with (
-            Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=1) as client,
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=1) as client,
             patch("chronary._base_client.time.sleep"),
         ):
             agent = client.agents.get("agt_abc123")
@@ -269,7 +294,7 @@ class TestSyncIdempotency:
             ]
         )
         with (
-            Chronary(api_key="chr_sk_test_x", base_url=BASE, max_retries=1) as client,
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=1) as client,
             patch("chronary._base_client.time.sleep"),
             pytest.raises(APIConnectionError),
         ):

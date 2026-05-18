@@ -48,7 +48,7 @@ class TestSyncWebhooks:
         respx.post(f"{BASE}/v1/webhooks").mock(
             return_value=httpx.Response(201, json=WEBHOOK_CREATE_DATA)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             wh = client.webhooks.create(
                 url="https://example.com/webhook",
                 events=["event.created", "event.updated"],
@@ -62,7 +62,7 @@ class TestSyncWebhooks:
         respx.get(f"{BASE}/v1/webhooks").mock(
             return_value=httpx.Response(200, json=LIST_RESPONSE)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             pager = client.webhooks.list()
             assert isinstance(pager, SyncPager)
             assert len(pager.data) == 1
@@ -73,7 +73,7 @@ class TestSyncWebhooks:
         respx.get(f"{BASE}/v1/webhooks/whk_abc123").mock(
             return_value=httpx.Response(200, json=WEBHOOK_DATA)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             wh = client.webhooks.get("whk_abc123")
             assert wh.id == "whk_abc123"
             assert wh.url == "https://example.com/webhook"
@@ -84,7 +84,7 @@ class TestSyncWebhooks:
         respx.patch(f"{BASE}/v1/webhooks/whk_abc123").mock(
             return_value=httpx.Response(200, json=updated)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             wh = client.webhooks.update("whk_abc123", active=False)
             assert wh.active is False
 
@@ -93,7 +93,7 @@ class TestSyncWebhooks:
         respx.delete(f"{BASE}/v1/webhooks/whk_abc123").mock(
             return_value=httpx.Response(204)
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.webhooks.delete("whk_abc123")
             assert result is None
 
@@ -104,7 +104,7 @@ class TestSyncWebhooks:
                 201, json=WEBHOOK_CREATE_DATA, headers={"X-Request-Id": "req_wh_1"}
             )
         )
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             wh = client.webhooks.create(
                 url="https://example.com/webhook",
                 events=["event.created"],
@@ -123,7 +123,7 @@ class TestAsyncWebhooks:
         respx.post(f"{BASE}/v1/webhooks").mock(
             return_value=httpx.Response(201, json=WEBHOOK_CREATE_DATA)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             wh = await client.webhooks.create(
                 url="https://example.com/webhook",
                 events=["event.created", "event.updated"],
@@ -136,7 +136,7 @@ class TestAsyncWebhooks:
         respx.get(f"{BASE}/v1/webhooks").mock(
             return_value=httpx.Response(200, json=LIST_RESPONSE)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             pager = await client.webhooks.list()
             assert isinstance(pager, AsyncPager)
             assert len(pager.data) == 1
@@ -146,7 +146,7 @@ class TestAsyncWebhooks:
         respx.get(f"{BASE}/v1/webhooks/whk_abc123").mock(
             return_value=httpx.Response(200, json=WEBHOOK_DATA)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             wh = await client.webhooks.get("whk_abc123")
             assert wh.id == "whk_abc123"
 
@@ -156,7 +156,7 @@ class TestAsyncWebhooks:
         respx.patch(f"{BASE}/v1/webhooks/whk_abc123").mock(
             return_value=httpx.Response(200, json=updated)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             wh = await client.webhooks.update("whk_abc123", events=["event.deleted"])
             assert wh.events == ["event.deleted"]
 
@@ -165,7 +165,7 @@ class TestAsyncWebhooks:
         respx.delete(f"{BASE}/v1/webhooks/whk_abc123").mock(
             return_value=httpx.Response(204)
         )
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = await client.webhooks.delete("whk_abc123")
             assert result is None
 
@@ -317,11 +317,15 @@ class TestClientWebhooksVerifyDelegation:
         import time
 
         secret = "whsec_test"
-        payload = b'{"id":"evt_1","type":"event.created"}'
+        payload = b'{"event":{"id":"evt_1"}}'
         ts = str(int(time.time()))
-        headers = {"X-Signature": self._sign(payload, ts, secret), "X-Timestamp": ts}
+        headers = {
+            "X-Signature": self._sign(payload, ts, secret),
+            "X-Timestamp": ts,
+            "X-Chronary-Event-Type": "event.created",
+        }
 
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             # Returns None on success; raises on failure.
             client.webhooks.verify_signature(payload, headers, secret=secret)
 
@@ -331,40 +335,52 @@ class TestClientWebhooksVerifyDelegation:
         from chronary import SignatureVerificationError
 
         secret = "whsec_test"
-        payload = b'{"id":"evt_1","type":"event.created"}'
+        payload = b'{"event":{"id":"evt_1"}}'
         ts = str(int(time.time()))
-        headers = {"X-Signature": self._sign(payload, ts, secret), "X-Timestamp": ts}
+        headers = {
+            "X-Signature": self._sign(payload, ts, secret),
+            "X-Timestamp": ts,
+            "X-Chronary-Event-Type": "event.created",
+        }
 
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             with pytest.raises(SignatureVerificationError):
                 client.webhooks.verify_signature(
-                    b'{"id":"evt_1","type":"event.deleted"}', headers, secret=secret
+                    b'{"event":{"id":"evt_2"}}', headers, secret=secret
                 )
 
     def test_unwrap_returns_parsed_event(self) -> None:
         import time
 
         secret = "whsec_test"
-        event_body = {"id": "evt_1", "type": "event.created", "data": {"x": 1}}
+        event_body = {"event": {"id": "evt_1"}, "x": 1}
         import json
 
         payload = json.dumps(event_body).encode("utf-8")
         ts = str(int(time.time()))
-        headers = {"X-Signature": self._sign(payload, ts, secret), "X-Timestamp": ts}
+        headers = {
+            "X-Signature": self._sign(payload, ts, secret),
+            "X-Timestamp": ts,
+            "X-Chronary-Event-Type": "event.created",
+        }
 
-        with Chronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.webhooks.unwrap(payload, headers, secret=secret)
-            assert result == event_body
+            assert result == {"type": "event.created", "data": event_body}
 
     async def test_async_client_exposes_same_methods(self) -> None:
         import time
 
         secret = "whsec_test"
-        payload = b'{"id":"evt_1","type":"event.created"}'
+        payload = b'{"event":{"id":"evt_1"}}'
         ts = str(int(time.time()))
-        headers = {"X-Signature": self._sign(payload, ts, secret), "X-Timestamp": ts}
+        headers = {
+            "X-Signature": self._sign(payload, ts, secret),
+            "X-Timestamp": ts,
+            "X-Chronary-Event-Type": "event.created",
+        }
 
-        async with AsyncChronary(api_key="chr_sk_test_x", base_url=BASE) as client:
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             # Methods are @staticmethod so they work on both sync + async
             # resources without awaiting.
             client.webhooks.verify_signature(payload, headers, secret=secret)
