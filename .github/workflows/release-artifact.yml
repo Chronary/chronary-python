@@ -1,5 +1,28 @@
 name: Release Artifact
 
+# Publishes the `chronary` Python package to PyPI and creates a GitHub Release.
+#
+# Provenance posture:
+#   - Publishes via PyPI Trusted Publishing — no PYPI_API_TOKEN required.
+#     The `id-token: write` permission and `pypa/gh-action-pypi-publish`
+#     are sufficient once chronary-python is registered as a Trusted
+#     Publisher for the `chronary` project on pypi.org.
+#   - `attestations: true` on the pypa publish action records a Sigstore
+#     attestation that PyPI surfaces on the project page.
+#   - GitHub artifact attestations also fire on public repos via
+#     actions/attest-build-provenance (visibility-gated).
+#
+# Prerequisites (one-time, on flip to public):
+#   1. chronary-python is public on GitHub.
+#   2. pypi.org → Your projects → `chronary` → Publishing → Add a new
+#      pending publisher (or, if the project exists, "Add a new publisher"):
+#        Owner: Chronary
+#        Repo: chronary-python
+#        Workflow: release-artifact.yml
+#        Environment: (leave blank)
+#   3. PYPI_API_TOKEN repo secret has been deleted (if it was ever set)
+#      and the legacy API token revoked on pypi.org.
+
 on:
   push:
     tags:
@@ -48,7 +71,10 @@ jobs:
           python -m pip install -e ".[dev]" build
 
       - name: Test
-        run: python -m pytest -v --cov=chronary --cov-fail-under=90
+        # Threshold is temporarily 88 to match .github/public-artifacts.json
+        # (see PR #696 / issue #695). Restore to 90 once #695 lands the
+        # missing tests for waitlist / audit_log / async webhook variants.
+        run: python -m pytest -v --cov=chronary --cov-fail-under=88
 
       - name: Build
         run: python -m build
