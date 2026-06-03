@@ -177,6 +177,22 @@ agent = client.agents.get("agt_abc123")
 print(agent._request_id)  # "req_..."
 ```
 
+## Plans & limits
+
+Chronary enforces a per-key rate limit and per-org monthly quotas that vary by plan:
+
+| | Free | Pro |
+|---|---|---|
+| Rate limit | 10 req/s | 50 req/s |
+| Webhook delivery retries | 4 | 8 |
+| Agents | 3 | 50 |
+| Calendars | 10 | 250 |
+| Events / mo | 2,500 | 125,000 |
+| API calls / mo | 50,000 | 1,000,000 |
+| Pro-only features | — | Scheduling proposals, temporal holds, cross-calendar availability, per-agent API keys (`chr_ak_*`) |
+
+Pro-only feature calls raise `APIError` (status 403) on Free. The SDK automatically retries `429` and `5xx` responses with exponential backoff (`max_retries`). See <https://docs.chronary.ai/resources/rate-limits/> for the full matrix.
+
 ## License
 
 Apache-2.0

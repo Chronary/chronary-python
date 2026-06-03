@@ -13,6 +13,9 @@ from .events import Event
 
 AgentStatus = Literal["idle", "working", "waiting", "error"]
 
+# Sentinel for distinguishing "not passed" from "explicitly passed None"
+_UNSET: Any = object()
+
 # ---------------------------------------------------------------------------
 # Response model
 # ---------------------------------------------------------------------------
@@ -27,6 +30,10 @@ class Calendar(ChronaryModel):
     agent_id: str | None = Field(default=None, alias="agentId")
     metadata: dict[str, Any]
     ical_url: str | None = None  # API returns snake_case for this field
+    # Default reminder offsets (minutes before start) applied to events that don't set
+    # their own. Each entry is between 1 and 40320 (28 days); max 5 entries. The system
+    # default is [10] (10 minutes).
+    default_reminders: list[int] | None = None
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")
 
@@ -41,6 +48,9 @@ class CalendarCreateParams(TypedDict):
     timezone: Required[str]
     agent_status: NotRequired[AgentStatus]
     metadata: NotRequired[dict[str, Any]]
+    # Default reminder offsets (minutes before start) for events on this calendar.
+    # Max 5 entries, each between 1 and 40320 (28 days). The system default is [10].
+    default_reminders: NotRequired[list[int]]
 
 
 class CalendarUpdateParams(TypedDict, total=False):
@@ -48,6 +58,7 @@ class CalendarUpdateParams(TypedDict, total=False):
     timezone: str
     agent_status: AgentStatus
     metadata: dict[str, Any]
+    default_reminders: list[int]
 
 
 class CalendarListParams(TypedDict, total=False):
@@ -130,6 +141,7 @@ class Calendars(SyncAPIResource):
         timezone: str,
         agent_status: AgentStatus | None = None,
         metadata: dict[str, Any] | None = None,
+        default_reminders: list[int] | None = None,
         max_retries: int | None = None,
     ) -> Calendar:
         body: dict[str, Any] = {"name": name, "timezone": timezone}
@@ -137,6 +149,8 @@ class Calendars(SyncAPIResource):
             body["agent_status"] = agent_status
         if metadata is not None:
             body["metadata"] = metadata
+        if default_reminders is not None:
+            body["default_reminders"] = default_reminders
         resp = self._request("POST", _CALENDARS_PATH, json=body, max_retries=max_retries)
         return self._build(Calendar, resp)
 
@@ -187,6 +201,7 @@ class Calendars(SyncAPIResource):
         timezone: str | None = None,
         agent_status: AgentStatus | None = None,
         metadata: dict[str, Any] | None = None,
+        default_reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
         max_retries: int | None = None,
     ) -> Calendar:
         body: dict[str, Any] = {}
@@ -198,6 +213,8 @@ class Calendars(SyncAPIResource):
             body["agent_status"] = agent_status
         if metadata is not None:
             body["metadata"] = metadata
+        if default_reminders is not _UNSET:
+            body["default_reminders"] = default_reminders
         resp = self._request(
             "PATCH", f"{_CALENDARS_PATH}/{calendar_id}", json=body, max_retries=max_retries
         )
@@ -279,6 +296,7 @@ class AsyncCalendars(AsyncAPIResource):
         timezone: str,
         agent_status: AgentStatus | None = None,
         metadata: dict[str, Any] | None = None,
+        default_reminders: list[int] | None = None,
         max_retries: int | None = None,
     ) -> Calendar:
         body: dict[str, Any] = {"name": name, "timezone": timezone}
@@ -286,6 +304,8 @@ class AsyncCalendars(AsyncAPIResource):
             body["agent_status"] = agent_status
         if metadata is not None:
             body["metadata"] = metadata
+        if default_reminders is not None:
+            body["default_reminders"] = default_reminders
         resp = await self._request("POST", _CALENDARS_PATH, json=body, max_retries=max_retries)
         return self._build(Calendar, resp)
 
@@ -340,6 +360,7 @@ class AsyncCalendars(AsyncAPIResource):
         timezone: str | None = None,
         agent_status: AgentStatus | None = None,
         metadata: dict[str, Any] | None = None,
+        default_reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
         max_retries: int | None = None,
     ) -> Calendar:
         body: dict[str, Any] = {}
@@ -351,6 +372,8 @@ class AsyncCalendars(AsyncAPIResource):
             body["agent_status"] = agent_status
         if metadata is not None:
             body["metadata"] = metadata
+        if default_reminders is not _UNSET:
+            body["default_reminders"] = default_reminders
         resp = await self._request(
             "PATCH", f"{_CALENDARS_PATH}/{calendar_id}", json=body, max_retries=max_retries
         )
@@ -437,6 +460,7 @@ class AgentCalendars(SyncAPIResource):
         timezone: str,
         agent_status: AgentStatus | None = None,
         metadata: dict[str, Any] | None = None,
+        default_reminders: list[int] | None = None,
         max_retries: int | None = None,
     ) -> Calendar:
         path = _AGENT_CALENDARS_PATH.format(agent_id=agent_id)
@@ -445,6 +469,8 @@ class AgentCalendars(SyncAPIResource):
             body["agent_status"] = agent_status
         if metadata is not None:
             body["metadata"] = metadata
+        if default_reminders is not None:
+            body["default_reminders"] = default_reminders
         resp = self._request("POST", path, json=body, max_retries=max_retries)
         return self._build(Calendar, resp)
 
@@ -492,6 +518,7 @@ class AsyncAgentCalendars(AsyncAPIResource):
         timezone: str,
         agent_status: AgentStatus | None = None,
         metadata: dict[str, Any] | None = None,
+        default_reminders: list[int] | None = None,
         max_retries: int | None = None,
     ) -> Calendar:
         path = _AGENT_CALENDARS_PATH.format(agent_id=agent_id)
@@ -500,6 +527,8 @@ class AsyncAgentCalendars(AsyncAPIResource):
             body["agent_status"] = agent_status
         if metadata is not None:
             body["metadata"] = metadata
+        if default_reminders is not None:
+            body["default_reminders"] = default_reminders
         resp = await self._request("POST", path, json=body, max_retries=max_retries)
         return self._build(Calendar, resp)
 

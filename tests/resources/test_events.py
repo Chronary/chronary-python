@@ -166,6 +166,34 @@ class TestSyncEvents:
             assert evt.status == "hold"
             assert evt.hold_priority == 10
 
+    @respx.mock
+    def test_create_with_reminders(self) -> None:
+        created = {**EVENT_DATA, "reminders": [10, 1440]}
+        route = respx.post(f"{BASE}/v1/calendars/cal_abc123/events").mock(
+            return_value=httpx.Response(201, json=created)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            evt = client.events.create(
+                "cal_abc123",
+                title="Strategy Sync",
+                start_time="2026-03-28T14:00:00Z",
+                end_time="2026-03-28T14:30:00Z",
+                reminders=[10, 1440],
+            )
+            assert evt.reminders == [10, 1440]
+            assert b'"reminders"' in route.calls[0].request.content
+
+    @respx.mock
+    def test_update_reminders_to_empty(self) -> None:
+        updated = {**EVENT_DATA, "reminders": []}
+        route = respx.patch(f"{BASE}/v1/calendars/cal_abc123/events/evt_abc123").mock(
+            return_value=httpx.Response(200, json=updated)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            evt = client.events.update("cal_abc123", "evt_abc123", reminders=[])
+            assert evt.reminders == []
+            assert b'"reminders"' in route.calls[0].request.content
+
 
 # ---------------------------------------------------------------------------
 # Agent-scoped sync tests

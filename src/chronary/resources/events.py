@@ -37,6 +37,11 @@ class Event(ChronaryModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
     hold_expires_at: datetime | None = Field(default=None, alias="holdExpiresAt")
     hold_priority: int | None = Field(default=None, alias="holdPriority")
+    # Reminder offsets in minutes before start_time (e.g. [10, 1440]); max 5 entries,
+    # each between 1 and 40320 (28 days). None means "inherit the calendar default";
+    # [] means "no reminders". The system default is [10] (10 minutes). Each reminder
+    # fires an event.reminder webhook and shows as a VALARM in the iCal feed.
+    reminders: list[int] | None = None
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")
 
@@ -54,6 +59,10 @@ class EventCreateParams(TypedDict):
     all_day: NotRequired[bool]
     status: NotRequired[EventStatus]
     metadata: NotRequired[dict[str, Any]]
+    # Reminder offsets in minutes before start_time (e.g. [10, 1440]); max 5 entries,
+    # each between 1 and 40320 (28 days). Omit to inherit the calendar default ([10]);
+    # pass [] for no reminders.
+    reminders: NotRequired[list[int]]
     # Hold-specific fields (required/valid only when status='hold').
     hold_expires_at: NotRequired[str]
     hold_priority: NotRequired[int]
@@ -68,6 +77,9 @@ class EventUpdateParams(TypedDict, total=False):
     # Holds cannot be updated via PATCH — use confirm() or release() instead.
     status: Literal["confirmed", "tentative", "cancelled"]
     metadata: dict[str, Any]
+    # Reminder offsets in minutes before start_time (e.g. [10, 1440]); max 5 entries,
+    # each between 1 and 40320 (28 days). [] clears reminders.
+    reminders: list[int]
 
 
 class EventListParams(TypedDict, total=False):
@@ -102,6 +114,7 @@ class Events(SyncAPIResource):
         all_day: bool | None = None,
         status: EventStatus | None = None,
         metadata: dict[str, Any] | None = None,
+        reminders: list[int] | None = None,
         hold_expires_at: str | None = None,
         hold_priority: int | None = None,
         max_retries: int | None = None,
@@ -120,6 +133,8 @@ class Events(SyncAPIResource):
             body["status"] = status
         if metadata is not None:
             body["metadata"] = metadata
+        if reminders is not None:
+            body["reminders"] = reminders
         if hold_expires_at is not None:
             body["hold_expires_at"] = hold_expires_at
         if hold_priority is not None:
@@ -188,6 +203,7 @@ class Events(SyncAPIResource):
         all_day: bool | None = None,
         status: Literal["confirmed", "tentative", "cancelled"] | None = None,
         metadata: dict[str, Any] | None = None,
+        reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
         max_retries: int | None = None,
     ) -> Event:
         path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
@@ -206,6 +222,8 @@ class Events(SyncAPIResource):
             body["status"] = status
         if metadata is not None:
             body["metadata"] = metadata
+        if reminders is not _UNSET:
+            body["reminders"] = reminders
         resp = self._request("PATCH", path, json=body, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -261,6 +279,7 @@ class AsyncEvents(AsyncAPIResource):
         all_day: bool | None = None,
         status: EventStatus | None = None,
         metadata: dict[str, Any] | None = None,
+        reminders: list[int] | None = None,
         hold_expires_at: str | None = None,
         hold_priority: int | None = None,
         max_retries: int | None = None,
@@ -279,6 +298,8 @@ class AsyncEvents(AsyncAPIResource):
             body["status"] = status
         if metadata is not None:
             body["metadata"] = metadata
+        if reminders is not None:
+            body["reminders"] = reminders
         if hold_expires_at is not None:
             body["hold_expires_at"] = hold_expires_at
         if hold_priority is not None:
@@ -347,6 +368,7 @@ class AsyncEvents(AsyncAPIResource):
         all_day: bool | None = None,
         status: Literal["confirmed", "tentative", "cancelled"] | None = None,
         metadata: dict[str, Any] | None = None,
+        reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
         max_retries: int | None = None,
     ) -> Event:
         path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
@@ -365,6 +387,8 @@ class AsyncEvents(AsyncAPIResource):
             body["status"] = status
         if metadata is not None:
             body["metadata"] = metadata
+        if reminders is not _UNSET:
+            body["reminders"] = reminders
         resp = await self._request("PATCH", path, json=body, max_retries=max_retries)
         return self._build(Event, resp)
 

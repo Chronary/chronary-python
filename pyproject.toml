@@ -41,22 +41,22 @@ packages = ["src/chronary"]
 
 [project.optional-dependencies]
 dev = [
-    "pytest >=8.0,<9",
-    "pytest-asyncio >=0.24,<1",
+    "pytest >=8.0,<10",
+    "pytest-asyncio >=0.24,<2",
     "respx >=0.21,<1",
     "ruff >=0.4,<1",
     "pyright >=1.1,<2",
-    "pytest-cov >=5.0,<6",
+    "pytest-cov >=5.0,<8",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest >=8.0,<9",
-    "pytest-asyncio >=0.24,<1",
+    "pytest >=8.0,<10",
+    "pytest-asyncio >=0.24,<2",
     "respx >=0.21,<1",
     "ruff >=0.4,<1",
     "pyright >=1.1,<2",
-    "pytest-cov >=5.0,<6",
+    "pytest-cov >=5.0,<8",
 ]
 
 [tool.ruff]

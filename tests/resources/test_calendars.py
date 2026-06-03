@@ -83,6 +83,32 @@ class TestSyncCalendars:
             assert cal.name == "Renamed"
 
     @respx.mock
+    def test_create_with_default_reminders(self) -> None:
+        created = {**CALENDAR_DATA, "default_reminders": [10, 60]}
+        route = respx.post(f"{BASE}/v1/calendars").mock(
+            return_value=httpx.Response(201, json=created)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            cal = client.calendars.create(
+                name="Sales Agent Calendar",
+                timezone="America/New_York",
+                default_reminders=[10, 60],
+            )
+            assert cal.default_reminders == [10, 60]
+            assert b'"default_reminders"' in route.calls[0].request.content
+
+    @respx.mock
+    def test_update_default_reminders_to_empty(self) -> None:
+        updated = {**CALENDAR_DATA, "default_reminders": []}
+        route = respx.patch(f"{BASE}/v1/calendars/cal_abc123").mock(
+            return_value=httpx.Response(200, json=updated)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            cal = client.calendars.update("cal_abc123", default_reminders=[])
+            assert cal.default_reminders == []
+            assert b'"default_reminders"' in route.calls[0].request.content
+
+    @respx.mock
     def test_delete(self) -> None:
         respx.delete(f"{BASE}/v1/calendars/cal_abc123").mock(
             return_value=httpx.Response(204)
