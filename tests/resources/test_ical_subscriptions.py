@@ -10,14 +10,14 @@ BASE = "https://api.chronary.ai"
 
 ICAL_SUB_DATA = {
     "id": "ics_abc123",
-    "agentId": "agt_abc123",
-    "calendarId": "cal_abc123",
+    "agent_id": "agt_abc123",
+    "calendar_id": "cal_abc123",
     "url": "https://example.com/calendar.ics",
     "label": "Team Calendar",
     "status": "active",
-    "lastSyncedAt": "2026-01-15T10:30:00Z",
-    "lastError": None,
-    "createdAt": "2026-01-15T10:00:00Z",
+    "last_synced_at": "2026-01-15T10:30:00Z",
+    "last_error": None,
+    "created_at": "2026-01-15T10:00:00Z",
 }
 
 LIST_RESPONSE = {

@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import datetime  # noqa: TCH003 — Pydantic needs this at runtime
 from typing import Any, Literal
 
-from pydantic import Field
 from typing_extensions import NotRequired, Required, TypedDict
 
 from .._models import ChronaryModel
@@ -19,14 +18,14 @@ class ICalSubscription(ChronaryModel):
     """An iCal feed subscription that imports events into a calendar."""
 
     id: str
-    agent_id: str = Field(alias="agentId")
-    calendar_id: str = Field(alias="calendarId")
+    agent_id: str
+    calendar_id: str
     url: str
     label: str | None = None
     status: Literal["active", "error", "paused"] = "active"
-    last_synced_at: datetime | None = Field(default=None, alias="lastSyncedAt")
-    last_error: str | None = Field(default=None, alias="lastError")
-    created_at: datetime = Field(alias="createdAt")
+    last_synced_at: datetime | None = None
+    last_error: str | None = None
+    created_at: datetime
 
 
 # ---------------------------------------------------------------------------

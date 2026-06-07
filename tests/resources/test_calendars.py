@@ -21,6 +21,8 @@ CALENDAR_DATA = {
     "agentId": "agt_abc123",
     "metadata": {},
     "ical_url": "https://ical.chronary.ai/ical/TOKEN.ics",
+    "externalId": None,
+    "provider": None,
     "createdAt": "2026-01-15T10:30:00Z",
     "updatedAt": "2026-01-15T10:30:00Z",
 }
@@ -50,6 +52,8 @@ class TestSyncCalendars:
             assert cal.id == "cal_abc123"
             assert cal.timezone == "America/New_York"
             assert cal.ical_url == "https://ical.chronary.ai/ical/TOKEN.ics"
+            assert cal.external_id is None
+            assert cal.provider is None
 
     @respx.mock
     def test_list(self) -> None:

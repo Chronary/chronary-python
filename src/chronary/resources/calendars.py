@@ -30,6 +30,8 @@ class Calendar(ChronaryModel):
     agent_id: str | None = Field(default=None, alias="agentId")
     metadata: dict[str, Any]
     ical_url: str | None = None  # API returns snake_case for this field
+    external_id: str | None = Field(default=None, alias="externalId")
+    provider: str | None = None
     # Default reminder offsets (minutes before start) applied to events that don't set
     # their own. Each entry is between 1 and 40320 (28 days); max 5 entries. The system
     # default is [10] (10 minutes).

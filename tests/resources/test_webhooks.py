@@ -21,6 +21,8 @@ WEBHOOK_DATA = {
     "url": "https://example.com/webhook",
     "events": ["event.created", "event.updated"],
     "active": True,
+    "consecutiveFailures": 0,
+    "firstFailureAt": None,
     "createdAt": "2026-01-15T10:30:00Z",
 }
 
@@ -56,6 +58,8 @@ class TestSyncWebhooks:
             assert isinstance(wh, Webhook)
             assert wh.id == "whk_abc123"
             assert wh.secret == "ws_test_secret_123"
+            assert wh.consecutive_failures == 0
+            assert wh.first_failure_at is None
 
     @respx.mock
     def test_list(self) -> None:
@@ -229,6 +233,8 @@ class TestWebhookEventType:
                 "url": "https://example.com/webhook",
                 "events": [event_type],
                 "active": True,
+                "consecutiveFailures": 0,
+                "firstFailureAt": None,
                 "createdAt": "2026-01-15T10:30:00Z",
             }
         )
@@ -242,6 +248,8 @@ class TestWebhookEventType:
                 "url": "https://example.com/webhook",
                 "events": list(_EXPECTED_EVENT_TYPES),
                 "active": True,
+                "consecutiveFailures": 0,
+                "firstFailureAt": None,
                 "createdAt": "2026-01-15T10:30:00Z",
             }
         )

@@ -74,6 +74,8 @@ class Webhook(ChronaryModel):
     events: list[WebhookEventType]
     active: bool = True
     secret: str | None = None  # Only present on creation response
+    consecutive_failures: int = Field(alias="consecutiveFailures")
+    first_failure_at: datetime | None = Field(default=None, alias="firstFailureAt")
     created_at: datetime = Field(alias="createdAt")
 
 
