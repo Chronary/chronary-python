@@ -10,6 +10,7 @@ from .ical_subscriptions import AsyncICalSubscriptions, ICalSubscriptions
 from .keys import AsyncKeys, Keys
 from .plans import AsyncPlans, Plans
 from .scheduling import AsyncScheduling, Scheduling
+from .terms import AsyncTerms, Terms
 from .usage import AsyncUsage, Usage
 from .waitlist import AsyncWaitlist, Waitlist
 from .webhooks import AsyncWebhooks, Webhooks
@@ -43,6 +44,8 @@ __all__ = [
     "AsyncPlans",
     "Scheduling",
     "AsyncScheduling",
+    "Terms",
+    "AsyncTerms",
     "Usage",
     "AsyncUsage",
     "Waitlist",

@@ -78,6 +78,7 @@ from .resources.scheduling import (
     ProposalSummary,
     ResolveProposalResponse,
 )
+from .resources.terms import AcceptedTerms, AcceptTermsParams
 from .resources.usage import (
     CrossCalendarQueriesUsage,
     HoldsUsage,
@@ -161,6 +162,9 @@ __all__ = [
     "ProposalSlotParams",
     "ResolveProposalResponse",
     "CancelProposalResponse",
+    # Terms
+    "AcceptedTerms",
+    "AcceptTermsParams",
     # Availability
     "AgentAvailabilityResponse",
     "CalendarAvailabilityResponse",

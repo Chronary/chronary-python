@@ -18,6 +18,7 @@ from .resources import (
     AsyncKeys,
     AsyncPlans,
     AsyncScheduling,
+    AsyncTerms,
     AsyncAuditLog,
     AsyncUsage,
     AsyncWaitlist,
@@ -31,6 +32,7 @@ from .resources import (
     Keys,
     Plans,
     Scheduling,
+    Terms,
     Usage,
     Waitlist,
     Webhooks,
@@ -50,6 +52,7 @@ class Chronary(SyncAPIClient):
     _ical_subscriptions: ICalSubscriptions | None
     _availability: Availability | None
     _scheduling: Scheduling | None
+    _terms: Terms | None
     _usage: Usage | None
     _audit_log: AuditLog | None
     _keys: Keys | None
@@ -84,6 +87,7 @@ class Chronary(SyncAPIClient):
         self._ical_subscriptions = None
         self._availability = None
         self._scheduling = None
+        self._terms = None
         self._usage = None
         self._audit_log = None
         self._keys = None
@@ -134,6 +138,12 @@ class Chronary(SyncAPIClient):
         if self._scheduling is None:
             self._scheduling = Scheduling(self)
         return self._scheduling
+
+    @property
+    def terms(self) -> Terms:
+        if self._terms is None:
+            self._terms = Terms(self)
+        return self._terms
 
     @property
     def usage(self) -> Usage:
@@ -200,6 +210,7 @@ class AsyncChronary(AsyncAPIClient):
     _ical_subscriptions: AsyncICalSubscriptions | None
     _availability: AsyncAvailability | None
     _scheduling: AsyncScheduling | None
+    _terms: AsyncTerms | None
     _usage: AsyncUsage | None
     _audit_log: AsyncAuditLog | None
     _keys: AsyncKeys | None
@@ -234,6 +245,7 @@ class AsyncChronary(AsyncAPIClient):
         self._ical_subscriptions = None
         self._availability = None
         self._scheduling = None
+        self._terms = None
         self._usage = None
         self._audit_log = None
         self._keys = None
@@ -284,6 +296,12 @@ class AsyncChronary(AsyncAPIClient):
         if self._scheduling is None:
             self._scheduling = AsyncScheduling(self)
         return self._scheduling
+
+    @property
+    def terms(self) -> AsyncTerms:
+        if self._terms is None:
+            self._terms = AsyncTerms(self)
+        return self._terms
 
     @property
     def usage(self) -> AsyncUsage:
