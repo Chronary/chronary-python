@@ -70,6 +70,7 @@ class Webhook(ChronaryModel):
     """A webhook subscription."""
 
     id: str
+    org_id: str = Field(alias="orgId")
     url: str
     events: list[WebhookEventType]
     active: bool = True

@@ -25,10 +25,14 @@ class Calendar(ChronaryModel):
     """A calendar registered with the Chronary API."""
 
     id: str
+    org_id: str = Field(alias="orgId")
     name: str
     timezone: str
     agent_id: str | None = Field(default=None, alias="agentId")
     metadata: dict[str, Any]
+    # Live agent status surfaced on the calendar. Wire key is snake_case
+    # (agent_status), so no alias is needed.
+    agent_status: AgentStatus | None = None
     ical_url: str | None = None  # API returns snake_case for this field
     external_id: str | None = Field(default=None, alias="externalId")
     provider: str | None = None
@@ -36,6 +40,7 @@ class Calendar(ChronaryModel):
     # their own. Each entry is between 1 and 40320 (28 days); max 5 entries. The system
     # default is [10] (10 minutes).
     default_reminders: list[int] | None = None
+    deleted_at: datetime | None = Field(default=None, alias="deletedAt")
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")
 

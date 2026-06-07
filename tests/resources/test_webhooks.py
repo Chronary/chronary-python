@@ -18,6 +18,7 @@ BASE = "https://api.chronary.ai"
 
 WEBHOOK_DATA = {
     "id": "whk_abc123",
+    "orgId": "org_abc123",
     "url": "https://example.com/webhook",
     "events": ["event.created", "event.updated"],
     "active": True,
@@ -57,6 +58,7 @@ class TestSyncWebhooks:
             )
             assert isinstance(wh, Webhook)
             assert wh.id == "whk_abc123"
+            assert wh.org_id == "org_abc123"
             assert wh.secret == "ws_test_secret_123"
             assert wh.consecutive_failures == 0
             assert wh.first_failure_at is None
@@ -230,6 +232,7 @@ class TestWebhookEventType:
         wh = Webhook.model_validate(
             {
                 "id": "whk_abc123",
+                "orgId": "org_abc123",
                 "url": "https://example.com/webhook",
                 "events": [event_type],
                 "active": True,
@@ -245,6 +248,7 @@ class TestWebhookEventType:
         wh = Webhook.model_validate(
             {
                 "id": "whk_abc123",
+                "orgId": "org_abc123",
                 "url": "https://example.com/webhook",
                 "events": list(_EXPECTED_EVENT_TYPES),
                 "active": True,
@@ -261,9 +265,11 @@ class TestWebhookEventType:
             Webhook.model_validate(
                 {
                     "id": "whk_abc123",
+                    "orgId": "org_abc123",
                     "url": "https://example.com/webhook",
                     "events": ["event.totally_made_up"],
                     "active": True,
+                    "consecutiveFailures": 0,
                     "createdAt": "2026-01-15T10:30:00Z",
                 }
             )

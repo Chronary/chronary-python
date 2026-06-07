@@ -16,13 +16,16 @@ BASE = "https://api.chronary.ai"
 
 CALENDAR_DATA = {
     "id": "cal_abc123",
+    "orgId": "org_abc123",
     "name": "Sales Agent Calendar",
     "timezone": "America/New_York",
     "agentId": "agt_abc123",
     "metadata": {},
+    "agent_status": "idle",
     "ical_url": "https://ical.chronary.ai/ical/TOKEN.ics",
     "externalId": None,
     "provider": None,
+    "deletedAt": None,
     "createdAt": "2026-01-15T10:30:00Z",
     "updatedAt": "2026-01-15T10:30:00Z",
 }
@@ -50,10 +53,13 @@ class TestSyncCalendars:
             cal = client.calendars.create(name="Sales Agent Calendar", timezone="America/New_York")
             assert isinstance(cal, Calendar)
             assert cal.id == "cal_abc123"
+            assert cal.org_id == "org_abc123"
             assert cal.timezone == "America/New_York"
+            assert cal.agent_status == "idle"
             assert cal.ical_url == "https://ical.chronary.ai/ical/TOKEN.ics"
             assert cal.external_id is None
             assert cal.provider is None
+            assert cal.deleted_at is None
 
     @respx.mock
     def test_list(self) -> None:

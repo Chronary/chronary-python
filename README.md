@@ -159,13 +159,18 @@ agent = client.agents.get("agt_abc123", max_retries=5)
 Verify incoming webhook signatures using HMAC-SHA256:
 
 ```python
-from chronary.webhook import verify_signature
+from chronary.webhook import verify_signature, SignatureVerificationError
 
-is_valid = verify_signature(
-    payload=request.body,
-    signature=request.headers["X-Chronary-Signature"],
-    secret=webhook_secret,
-)
+try:
+    verify_signature(
+        payload=request.body,
+        headers=request.headers,
+        secret=webhook_secret,
+    )
+    # signature valid — process the event
+except SignatureVerificationError:
+    # reject the request (e.g. return 401)
+    ...
 ```
 
 ## Request IDs
