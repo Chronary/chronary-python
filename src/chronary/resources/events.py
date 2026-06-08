@@ -96,6 +96,7 @@ class EventListParams(TypedDict, total=False):
 # ---------------------------------------------------------------------------
 
 _EVENTS_PATH = "/v1/calendars/{calendar_id}/events"
+_EVENT_BY_ID_PATH = "/v1/events/{event_id}"
 _EVENTS_CONFIRM_PATH = "/v1/events/{event_id}/confirm"
 _EVENTS_RELEASE_PATH = "/v1/events/{event_id}/release"
 
@@ -235,6 +236,63 @@ class Events(SyncAPIResource):
         max_retries: int | None = None,
     ) -> None:
         path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
+        self._request("DELETE", path, max_retries=max_retries)
+
+    def get_by_id(
+        self,
+        event_id: str,
+        *,
+        max_retries: int | None = None,
+    ) -> Event:
+        """Fetch an event by ID alone — the calendar is resolved internally."""
+        path = _EVENT_BY_ID_PATH.format(event_id=event_id)
+        resp = self._request("GET", path, max_retries=max_retries)
+        return self._build(Event, resp)
+
+    def update_by_id(
+        self,
+        event_id: str,
+        *,
+        title: str | None = None,
+        description: str | None = _UNSET,  # type: ignore[assignment]
+        start_time: str | None = None,
+        end_time: str | None = None,
+        all_day: bool | None = None,
+        status: Literal["confirmed", "tentative", "cancelled"] | None = None,
+        metadata: dict[str, Any] | None = None,
+        reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
+        max_retries: int | None = None,
+    ) -> Event:
+        """Update an event by ID alone — the calendar is resolved internally."""
+        path = _EVENT_BY_ID_PATH.format(event_id=event_id)
+        body: dict[str, Any] = {}
+        if title is not None:
+            body["title"] = title
+        if description is not _UNSET:
+            body["description"] = description
+        if start_time is not None:
+            body["start_time"] = start_time
+        if end_time is not None:
+            body["end_time"] = end_time
+        if all_day is not None:
+            body["all_day"] = all_day
+        if status is not None:
+            body["status"] = status
+        if metadata is not None:
+            body["metadata"] = metadata
+        if reminders is not _UNSET:
+            body["reminders"] = reminders
+        resp = self._request("PATCH", path, json=body, max_retries=max_retries)
+        return self._build(Event, resp)
+
+    def delete_by_id(
+        self,
+        event_id: str,
+        *,
+        max_retries: int | None = None,
+    ) -> None:
+        """Delete an event by ID alone — the calendar is resolved internally."""
+        path = _EVENT_BY_ID_PATH.format(event_id=event_id)
         self._request("DELETE", path, max_retries=max_retries)
 
     def confirm(
@@ -400,6 +458,63 @@ class AsyncEvents(AsyncAPIResource):
         max_retries: int | None = None,
     ) -> None:
         path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
+        await self._request("DELETE", path, max_retries=max_retries)
+
+    async def get_by_id(
+        self,
+        event_id: str,
+        *,
+        max_retries: int | None = None,
+    ) -> Event:
+        """Fetch an event by ID alone — the calendar is resolved internally."""
+        path = _EVENT_BY_ID_PATH.format(event_id=event_id)
+        resp = await self._request("GET", path, max_retries=max_retries)
+        return self._build(Event, resp)
+
+    async def update_by_id(
+        self,
+        event_id: str,
+        *,
+        title: str | None = None,
+        description: str | None = _UNSET,  # type: ignore[assignment]
+        start_time: str | None = None,
+        end_time: str | None = None,
+        all_day: bool | None = None,
+        status: Literal["confirmed", "tentative", "cancelled"] | None = None,
+        metadata: dict[str, Any] | None = None,
+        reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
+        max_retries: int | None = None,
+    ) -> Event:
+        """Update an event by ID alone — the calendar is resolved internally."""
+        path = _EVENT_BY_ID_PATH.format(event_id=event_id)
+        body: dict[str, Any] = {}
+        if title is not None:
+            body["title"] = title
+        if description is not _UNSET:
+            body["description"] = description
+        if start_time is not None:
+            body["start_time"] = start_time
+        if end_time is not None:
+            body["end_time"] = end_time
+        if all_day is not None:
+            body["all_day"] = all_day
+        if status is not None:
+            body["status"] = status
+        if metadata is not None:
+            body["metadata"] = metadata
+        if reminders is not _UNSET:
+            body["reminders"] = reminders
+        resp = await self._request("PATCH", path, json=body, max_retries=max_retries)
+        return self._build(Event, resp)
+
+    async def delete_by_id(
+        self,
+        event_id: str,
+        *,
+        max_retries: int | None = None,
+    ) -> None:
+        """Delete an event by ID alone — the calendar is resolved internally."""
+        path = _EVENT_BY_ID_PATH.format(event_id=event_id)
         await self._request("DELETE", path, max_retries=max_retries)
 
     async def confirm(

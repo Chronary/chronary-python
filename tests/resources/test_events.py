@@ -143,6 +143,34 @@ class TestSyncEvents:
             assert evt.status == "cancelled"
 
     @respx.mock
+    def test_get_by_id(self) -> None:
+        respx.get(f"{BASE}/v1/events/evt_abc123").mock(
+            return_value=httpx.Response(200, json=EVENT_DATA)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            evt = client.events.get_by_id("evt_abc123")
+            assert evt.id == "evt_abc123"
+
+    @respx.mock
+    def test_update_by_id(self) -> None:
+        updated = {**EVENT_DATA, "title": "Renamed"}
+        respx.patch(f"{BASE}/v1/events/evt_abc123").mock(
+            return_value=httpx.Response(200, json=updated)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            evt = client.events.update_by_id("evt_abc123", title="Renamed")
+            assert evt.title == "Renamed"
+
+    @respx.mock
+    def test_delete_by_id(self) -> None:
+        respx.delete(f"{BASE}/v1/events/evt_abc123").mock(
+            return_value=httpx.Response(204)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            result = client.events.delete_by_id("evt_abc123")
+            assert result is None
+
+    @respx.mock
     def test_create_hold(self) -> None:
         hold = {
             **EVENT_DATA,
@@ -270,6 +298,34 @@ class TestAsyncEvents:
         )
         async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = await client.events.delete("cal_abc123", "evt_abc123")
+            assert result is None
+
+    @respx.mock
+    async def test_get_by_id(self) -> None:
+        respx.get(f"{BASE}/v1/events/evt_abc123").mock(
+            return_value=httpx.Response(200, json=EVENT_DATA)
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            evt = await client.events.get_by_id("evt_abc123")
+            assert evt.id == "evt_abc123"
+
+    @respx.mock
+    async def test_update_by_id(self) -> None:
+        updated = {**EVENT_DATA, "title": "Renamed"}
+        respx.patch(f"{BASE}/v1/events/evt_abc123").mock(
+            return_value=httpx.Response(200, json=updated)
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            evt = await client.events.update_by_id("evt_abc123", title="Renamed")
+            assert evt.title == "Renamed"
+
+    @respx.mock
+    async def test_delete_by_id(self) -> None:
+        respx.delete(f"{BASE}/v1/events/evt_abc123").mock(
+            return_value=httpx.Response(204)
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            result = await client.events.delete_by_id("evt_abc123")
             assert result is None
 
     @respx.mock
