@@ -24,6 +24,8 @@ CATALOG_FIXTURE = {
                 "availability_queries": 10000,
                 "ical_subscriptions": 3,
                 "proposals": 500,
+                "webhook_endpoints": 3,
+                "scoped_keys": 0,
             },
             "display_features": ["5 agents"],
             "recommended": False,
@@ -77,6 +79,10 @@ class TestSyncPlans:
         assert result.plans[1].price == 2900
         assert result.plans[1].recommended is True
         assert isinstance(result.plans[0], Plan)
+        # Guards the endpoint/key caps previously absent from PlanLimits.
+        assert result.plans[0].limits is not None
+        assert result.plans[0].limits.webhook_endpoints == 3
+        assert result.plans[0].limits.scoped_keys == 0
         assert route.called
 
     @respx.mock

@@ -24,6 +24,10 @@ class PlanLimits(ChronaryModel):
     availability_queries: int | None = None
     ical_subscriptions: int | None = None
     proposals: int | None = None
+    webhook_endpoints: int | None = None
+    """Max active webhook subscription endpoints per org."""
+    scoped_keys: int | None = None
+    """Max live agent-scoped API keys (``chr_ak_*``) per org."""
 
 
 class Plan(ChronaryModel):
