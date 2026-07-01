@@ -143,6 +143,56 @@ class TestSyncAvailability:
             assert len(result.slots) == 1
 
     @respx.mock
+    def test_duration_param_forwarded(self) -> None:
+        """Passing duration sends duration and not slot_duration."""
+        route = respx.get(f"{BASE}/v1/agents/agt_abc123/availability").mock(
+            return_value=httpx.Response(200, json=AGENT_AVAIL_DATA)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            client.availability.get(
+                "agt_abc123",
+                start="2026-03-28T09:00:00Z",
+                end="2026-03-28T17:00:00Z",
+                duration="45m",
+            )
+        request = route.calls.last.request
+        assert request.url.params.get("duration") == "45m"
+        assert "slot_duration" not in request.url.params
+
+    @respx.mock
+    def test_slot_duration_still_works(self) -> None:
+        """The deprecated slot_duration alias still forwards, without duration."""
+        route = respx.get(f"{BASE}/v1/agents/agt_abc123/availability").mock(
+            return_value=httpx.Response(200, json=AGENT_AVAIL_DATA)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            client.availability.get(
+                "agt_abc123",
+                start="2026-03-28T09:00:00Z",
+                end="2026-03-28T17:00:00Z",
+                slot_duration="1h",
+            )
+        request = route.calls.last.request
+        assert request.url.params.get("slot_duration") == "1h"
+        assert "duration" not in request.url.params
+
+    @respx.mock
+    def test_find_meeting_time_duration_forwarded(self) -> None:
+        route = respx.get(f"{BASE}/v1/availability").mock(
+            return_value=httpx.Response(200, json=CROSS_AVAIL_DATA)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            client.availability.find_meeting_time(
+                agents=["agt_1", "agt_2"],
+                start="2026-03-28T09:00:00Z",
+                end="2026-03-28T17:00:00Z",
+                duration="30m",
+            )
+        request = route.calls.last.request
+        assert request.url.params.get("duration") == "30m"
+        assert "slot_duration" not in request.url.params
+
+    @respx.mock
     def test_request_id(self) -> None:
         respx.get(f"{BASE}/v1/agents/agt_abc123/availability").mock(
             return_value=httpx.Response(
@@ -220,3 +270,37 @@ class TestAsyncAvailability:
             )
             assert isinstance(result, AgentAvailabilityResponse)
             assert len(result.slots) == 1
+
+    @respx.mock
+    async def test_duration_param_forwarded(self) -> None:
+        """Passing duration sends duration and not slot_duration."""
+        route = respx.get(f"{BASE}/v1/calendars/cal_abc123/availability").mock(
+            return_value=httpx.Response(200, json=CALENDAR_AVAIL_DATA)
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            await client.availability.get_calendar(
+                "cal_abc123",
+                start="2026-03-28T09:00:00Z",
+                end="2026-03-28T17:00:00Z",
+                duration="45m",
+            )
+        request = route.calls.last.request
+        assert request.url.params.get("duration") == "45m"
+        assert "slot_duration" not in request.url.params
+
+    @respx.mock
+    async def test_slot_duration_still_works(self) -> None:
+        """The deprecated slot_duration alias still forwards, without duration."""
+        route = respx.get(f"{BASE}/v1/calendars/cal_abc123/availability").mock(
+            return_value=httpx.Response(200, json=CALENDAR_AVAIL_DATA)
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            await client.availability.get_calendar(
+                "cal_abc123",
+                start="2026-03-28T09:00:00Z",
+                end="2026-03-28T17:00:00Z",
+                slot_duration="1h",
+            )
+        request = route.calls.last.request
+        assert request.url.params.get("slot_duration") == "1h"
+        assert "duration" not in request.url.params
