@@ -42,6 +42,17 @@ class Event(ChronaryModel):
     # [] means "no reminders". The system default is [10] (10 minutes). Each reminder
     # fires an event.reminder webhook and shows as a VALARM in the iCal feed.
     reminders: list[int] | None = None
+    # RFC 5545 RRULE subset (no "RRULE:" prefix) when this event is a recurring
+    # series master, e.g. "FREQ=WEEKLY;BYDAY=MO,WE;COUNT=12". None = one-off event.
+    recurrence_rule: str | None = Field(default=None, alias="recurrenceRule")
+    # ISO 8601 starts of individually cancelled occurrences (EXDATE).
+    recurrence_exdates: list[str] = Field(default_factory=list, alias="recurrenceExdates")
+    # Present only on expanded instances (expand=True): the id of the recurring
+    # series master this instance belongs to.
+    recurring_event_id: str | None = Field(default=None, alias="recurringEventId")
+    # Present only on expanded instances: the occurrence start this instance
+    # was generated for.
+    original_start_time: datetime | None = Field(default=None, alias="originalStartTime")
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")
 
@@ -63,6 +74,11 @@ class EventCreateParams(TypedDict):
     # each between 1 and 40320 (28 days). Omit to inherit the calendar default ([10]);
     # pass [] for no reminders.
     reminders: NotRequired[list[int]]
+    # RFC 5545 RRULE subset (no "RRULE:" prefix), e.g. "FREQ=WEEKLY;BYDAY=MO,WE;COUNT=12".
+    # Not allowed with status='hold'. Free plan: 5 recurring events, and the series
+    # must end within 90 days (bounded COUNT/UNTIL required); Pro plan: 250 recurring
+    # events, unbounded rules allowed. 400 invalid rule; 403 plan_required; 429 quota.
+    recurrence_rule: NotRequired[str]
     # Hold-specific fields (required/valid only when status='hold').
     hold_expires_at: NotRequired[str]
     hold_priority: NotRequired[int]
@@ -80,6 +96,11 @@ class EventUpdateParams(TypedDict, total=False):
     # Reminder offsets in minutes before start_time (e.g. [10, 1440]); max 5 entries,
     # each between 1 and 40320 (28 days). [] clears reminders.
     reminders: list[int]
+    # Full-series edit: replaces the recurrence rule on the whole series.
+    # Explicit None clears the rule, converting the series back to a one-off
+    # event. Same plan limits as create (Free: 5 + bounded within 90 days;
+    # Pro: 250 + unbounded allowed).
+    recurrence_rule: str | None
 
 
 class EventListParams(TypedDict, total=False):
@@ -89,6 +110,9 @@ class EventListParams(TypedDict, total=False):
     source: Literal["internal", "external_ical"]
     limit: int
     offset: int
+    # Expand recurring series masters into individual instances. When True the
+    # API requires both start_after and start_before, at most 366 days apart.
+    expand: bool
 
 
 # ---------------------------------------------------------------------------
@@ -116,10 +140,20 @@ class Events(SyncAPIResource):
         status: EventStatus | None = None,
         metadata: dict[str, Any] | None = None,
         reminders: list[int] | None = None,
+        recurrence_rule: str | None = None,
         hold_expires_at: str | None = None,
         hold_priority: int | None = None,
         max_retries: int | None = None,
     ) -> Event:
+        """Create an event.
+
+        ``recurrence_rule`` (RFC 5545 RRULE subset, no "RRULE:" prefix, e.g.
+        ``"FREQ=WEEKLY;BYDAY=MO,WE;COUNT=12"``) makes the event a recurring
+        series master. Not allowed with ``status="hold"``. Plan limits: Free —
+        5 recurring events and the series must end within 90 days (bounded
+        COUNT/UNTIL required); Pro — 250 recurring events, unbounded allowed.
+        Raises 400 for an invalid rule, 403 (plan_required), or 429 (quota).
+        """
         path = _EVENTS_PATH.format(calendar_id=calendar_id)
         body: dict[str, Any] = {
             "title": title,
@@ -136,6 +170,8 @@ class Events(SyncAPIResource):
             body["metadata"] = metadata
         if reminders is not None:
             body["reminders"] = reminders
+        if recurrence_rule is not None:
+            body["recurrence_rule"] = recurrence_rule
         if hold_expires_at is not None:
             body["hold_expires_at"] = hold_expires_at
         if hold_priority is not None:
@@ -153,8 +189,16 @@ class Events(SyncAPIResource):
         source: Literal["internal", "external_ical"] | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        expand: bool | None = None,
         max_retries: int | None = None,
     ) -> SyncPager[Event]:
+        """List events on a calendar.
+
+        ``expand=True`` expands recurring series masters into individual
+        instances (each carrying ``recurring_event_id`` and
+        ``original_start_time``); the API then requires both ``start_after``
+        and ``start_before``, at most 366 days apart.
+        """
         path = _EVENTS_PATH.format(calendar_id=calendar_id)
         params: dict[str, Any] = {
             "start_after": start_after,
@@ -163,6 +207,8 @@ class Events(SyncAPIResource):
             "source": source,
             "limit": limit,
             "offset": offset,
+            # The API expects the literal strings "true"/"false".
+            "expand": None if expand is None else ("true" if expand else "false"),
         }
         resp = self._request("GET", path, params=params, max_retries=max_retries)
         raw = resp.json()
@@ -205,8 +251,16 @@ class Events(SyncAPIResource):
         status: Literal["confirmed", "tentative", "cancelled"] | None = None,
         metadata: dict[str, Any] | None = None,
         reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
+        recurrence_rule: str | None = _UNSET,  # type: ignore[assignment]
         max_retries: int | None = None,
     ) -> Event:
+        """Update an event.
+
+        ``recurrence_rule`` is a full-series edit: it replaces the rule on the
+        whole series. Pass ``None`` explicitly to clear the rule (converting
+        the series back to a one-off event); omit it to leave the rule
+        unchanged. Same plan limits as :meth:`create`.
+        """
         path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
         body: dict[str, Any] = {}
         if title is not None:
@@ -225,6 +279,8 @@ class Events(SyncAPIResource):
             body["metadata"] = metadata
         if reminders is not _UNSET:
             body["reminders"] = reminders
+        if recurrence_rule is not _UNSET:
+            body["recurrence_rule"] = recurrence_rule
         resp = self._request("PATCH", path, json=body, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -233,10 +289,24 @@ class Events(SyncAPIResource):
         calendar_id: str,
         event_id: str,
         *,
+        occurrence_start: str | None = None,
         max_retries: int | None = None,
-    ) -> None:
+    ) -> Event | None:
+        """Delete an event, or cancel one occurrence of a recurring series.
+
+        Without ``occurrence_start`` the event (or the entire series, for a
+        recurring master) is deleted and ``None`` is returned. With
+        ``occurrence_start`` (ISO datetime of an active occurrence) only that
+        occurrence is cancelled and the updated series master ``Event`` is
+        returned. Raises 400 if the datetime is not an active occurrence, 409
+        if the event is not a recurring series.
+        """
         path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
-        self._request("DELETE", path, max_retries=max_retries)
+        params = {"occurrence_start": occurrence_start}
+        resp = self._request("DELETE", path, params=params, max_retries=max_retries)
+        if occurrence_start is not None:
+            return self._build(Event, resp)
+        return None
 
     def get_by_id(
         self,
@@ -261,9 +331,14 @@ class Events(SyncAPIResource):
         status: Literal["confirmed", "tentative", "cancelled"] | None = None,
         metadata: dict[str, Any] | None = None,
         reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
+        recurrence_rule: str | None = _UNSET,  # type: ignore[assignment]
         max_retries: int | None = None,
     ) -> Event:
-        """Update an event by ID alone — the calendar is resolved internally."""
+        """Update an event by ID alone — the calendar is resolved internally.
+
+        ``recurrence_rule`` is a full-series edit; explicit ``None`` clears the
+        rule — see :meth:`update`.
+        """
         path = _EVENT_BY_ID_PATH.format(event_id=event_id)
         body: dict[str, Any] = {}
         if title is not None:
@@ -282,6 +357,8 @@ class Events(SyncAPIResource):
             body["metadata"] = metadata
         if reminders is not _UNSET:
             body["reminders"] = reminders
+        if recurrence_rule is not _UNSET:
+            body["recurrence_rule"] = recurrence_rule
         resp = self._request("PATCH", path, json=body, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -289,11 +366,21 @@ class Events(SyncAPIResource):
         self,
         event_id: str,
         *,
+        occurrence_start: str | None = None,
         max_retries: int | None = None,
-    ) -> None:
-        """Delete an event by ID alone — the calendar is resolved internally."""
+    ) -> Event | None:
+        """Delete an event by ID alone — the calendar is resolved internally.
+
+        With ``occurrence_start`` (ISO datetime), cancels only that occurrence
+        of a recurring series and returns the updated master ``Event`` — see
+        :meth:`delete`.
+        """
         path = _EVENT_BY_ID_PATH.format(event_id=event_id)
-        self._request("DELETE", path, max_retries=max_retries)
+        params = {"occurrence_start": occurrence_start}
+        resp = self._request("DELETE", path, params=params, max_retries=max_retries)
+        if occurrence_start is not None:
+            return self._build(Event, resp)
+        return None
 
     def confirm(
         self,
@@ -338,10 +425,20 @@ class AsyncEvents(AsyncAPIResource):
         status: EventStatus | None = None,
         metadata: dict[str, Any] | None = None,
         reminders: list[int] | None = None,
+        recurrence_rule: str | None = None,
         hold_expires_at: str | None = None,
         hold_priority: int | None = None,
         max_retries: int | None = None,
     ) -> Event:
+        """Create an event.
+
+        ``recurrence_rule`` (RFC 5545 RRULE subset, no "RRULE:" prefix, e.g.
+        ``"FREQ=WEEKLY;BYDAY=MO,WE;COUNT=12"``) makes the event a recurring
+        series master. Not allowed with ``status="hold"``. Plan limits: Free —
+        5 recurring events and the series must end within 90 days (bounded
+        COUNT/UNTIL required); Pro — 250 recurring events, unbounded allowed.
+        Raises 400 for an invalid rule, 403 (plan_required), or 429 (quota).
+        """
         path = _EVENTS_PATH.format(calendar_id=calendar_id)
         body: dict[str, Any] = {
             "title": title,
@@ -358,6 +455,8 @@ class AsyncEvents(AsyncAPIResource):
             body["metadata"] = metadata
         if reminders is not None:
             body["reminders"] = reminders
+        if recurrence_rule is not None:
+            body["recurrence_rule"] = recurrence_rule
         if hold_expires_at is not None:
             body["hold_expires_at"] = hold_expires_at
         if hold_priority is not None:
@@ -375,8 +474,16 @@ class AsyncEvents(AsyncAPIResource):
         source: Literal["internal", "external_ical"] | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        expand: bool | None = None,
         max_retries: int | None = None,
     ) -> AsyncPager[Event]:
+        """List events on a calendar.
+
+        ``expand=True`` expands recurring series masters into individual
+        instances (each carrying ``recurring_event_id`` and
+        ``original_start_time``); the API then requires both ``start_after``
+        and ``start_before``, at most 366 days apart.
+        """
         path = _EVENTS_PATH.format(calendar_id=calendar_id)
         params: dict[str, Any] = {
             "start_after": start_after,
@@ -385,6 +492,8 @@ class AsyncEvents(AsyncAPIResource):
             "source": source,
             "limit": limit,
             "offset": offset,
+            # The API expects the literal strings "true"/"false".
+            "expand": None if expand is None else ("true" if expand else "false"),
         }
         resp = await self._request("GET", path, params=params, max_retries=max_retries)
         raw = resp.json()
@@ -427,8 +536,16 @@ class AsyncEvents(AsyncAPIResource):
         status: Literal["confirmed", "tentative", "cancelled"] | None = None,
         metadata: dict[str, Any] | None = None,
         reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
+        recurrence_rule: str | None = _UNSET,  # type: ignore[assignment]
         max_retries: int | None = None,
     ) -> Event:
+        """Update an event.
+
+        ``recurrence_rule`` is a full-series edit: it replaces the rule on the
+        whole series. Pass ``None`` explicitly to clear the rule (converting
+        the series back to a one-off event); omit it to leave the rule
+        unchanged. Same plan limits as :meth:`create`.
+        """
         path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
         body: dict[str, Any] = {}
         if title is not None:
@@ -447,6 +564,8 @@ class AsyncEvents(AsyncAPIResource):
             body["metadata"] = metadata
         if reminders is not _UNSET:
             body["reminders"] = reminders
+        if recurrence_rule is not _UNSET:
+            body["recurrence_rule"] = recurrence_rule
         resp = await self._request("PATCH", path, json=body, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -455,10 +574,24 @@ class AsyncEvents(AsyncAPIResource):
         calendar_id: str,
         event_id: str,
         *,
+        occurrence_start: str | None = None,
         max_retries: int | None = None,
-    ) -> None:
+    ) -> Event | None:
+        """Delete an event, or cancel one occurrence of a recurring series.
+
+        Without ``occurrence_start`` the event (or the entire series, for a
+        recurring master) is deleted and ``None`` is returned. With
+        ``occurrence_start`` (ISO datetime of an active occurrence) only that
+        occurrence is cancelled and the updated series master ``Event`` is
+        returned. Raises 400 if the datetime is not an active occurrence, 409
+        if the event is not a recurring series.
+        """
         path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
-        await self._request("DELETE", path, max_retries=max_retries)
+        params = {"occurrence_start": occurrence_start}
+        resp = await self._request("DELETE", path, params=params, max_retries=max_retries)
+        if occurrence_start is not None:
+            return self._build(Event, resp)
+        return None
 
     async def get_by_id(
         self,
@@ -483,9 +616,14 @@ class AsyncEvents(AsyncAPIResource):
         status: Literal["confirmed", "tentative", "cancelled"] | None = None,
         metadata: dict[str, Any] | None = None,
         reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
+        recurrence_rule: str | None = _UNSET,  # type: ignore[assignment]
         max_retries: int | None = None,
     ) -> Event:
-        """Update an event by ID alone — the calendar is resolved internally."""
+        """Update an event by ID alone — the calendar is resolved internally.
+
+        ``recurrence_rule`` is a full-series edit; explicit ``None`` clears the
+        rule — see :meth:`update`.
+        """
         path = _EVENT_BY_ID_PATH.format(event_id=event_id)
         body: dict[str, Any] = {}
         if title is not None:
@@ -504,6 +642,8 @@ class AsyncEvents(AsyncAPIResource):
             body["metadata"] = metadata
         if reminders is not _UNSET:
             body["reminders"] = reminders
+        if recurrence_rule is not _UNSET:
+            body["recurrence_rule"] = recurrence_rule
         resp = await self._request("PATCH", path, json=body, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -511,11 +651,21 @@ class AsyncEvents(AsyncAPIResource):
         self,
         event_id: str,
         *,
+        occurrence_start: str | None = None,
         max_retries: int | None = None,
-    ) -> None:
-        """Delete an event by ID alone — the calendar is resolved internally."""
+    ) -> Event | None:
+        """Delete an event by ID alone — the calendar is resolved internally.
+
+        With ``occurrence_start`` (ISO datetime), cancels only that occurrence
+        of a recurring series and returns the updated master ``Event`` — see
+        :meth:`delete`.
+        """
         path = _EVENT_BY_ID_PATH.format(event_id=event_id)
-        await self._request("DELETE", path, max_retries=max_retries)
+        params = {"occurrence_start": occurrence_start}
+        resp = await self._request("DELETE", path, params=params, max_retries=max_retries)
+        if occurrence_start is not None:
+            return self._build(Event, resp)
+        return None
 
     async def confirm(
         self,
@@ -560,8 +710,15 @@ class AgentEvents(SyncAPIResource):
         source: Literal["internal", "external_ical"] | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        expand: bool | None = None,
         max_retries: int | None = None,
     ) -> SyncPager[Event]:
+        """List events across an agent's calendars.
+
+        ``expand=True`` expands recurring series masters into individual
+        instances; the API then requires both ``start_after`` and
+        ``start_before``, at most 366 days apart.
+        """
         path = _AGENT_EVENTS_PATH.format(agent_id=agent_id)
         params: dict[str, Any] = {
             "start_after": start_after,
@@ -570,6 +727,8 @@ class AgentEvents(SyncAPIResource):
             "source": source,
             "limit": limit,
             "offset": offset,
+            # The API expects the literal strings "true"/"false".
+            "expand": None if expand is None else ("true" if expand else "false"),
         }
         resp = self._request("GET", path, params=params, max_retries=max_retries)
         raw = resp.json()
@@ -607,8 +766,15 @@ class AsyncAgentEvents(AsyncAPIResource):
         source: Literal["internal", "external_ical"] | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        expand: bool | None = None,
         max_retries: int | None = None,
     ) -> AsyncPager[Event]:
+        """List events across an agent's calendars.
+
+        ``expand=True`` expands recurring series masters into individual
+        instances; the API then requires both ``start_after`` and
+        ``start_before``, at most 366 days apart.
+        """
         path = _AGENT_EVENTS_PATH.format(agent_id=agent_id)
         params: dict[str, Any] = {
             "start_after": start_after,
@@ -617,6 +783,8 @@ class AsyncAgentEvents(AsyncAPIResource):
             "source": source,
             "limit": limit,
             "offset": offset,
+            # The API expects the literal strings "true"/"false".
+            "expand": None if expand is None else ("true" if expand else "false"),
         }
         resp = await self._request("GET", path, params=params, max_retries=max_retries)
         raw = resp.json()

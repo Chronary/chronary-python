@@ -14,6 +14,7 @@ USAGE_DATA = {
     "agents": {"used": 3, "limit": 5},
     "calendars": {"used": 5, "limit": 10},
     "events": {"used": 150, "limit": 5000},
+    "recurring_events": {"used": 2, "limit": 5},
     "api_calls": {"used": 1200, "limit": 50000},
     "webhooks": {"used": 50, "limit": 10000},
     "availability_queries": {"used": 30, "limit": 10000},
@@ -44,6 +45,9 @@ class TestSyncUsage:
             assert usage.agents.used == 3
             assert usage.agents.limit == 5
             assert usage.events.used == 150
+            assert isinstance(usage.recurring_events, ResourceUsage)
+            assert usage.recurring_events.used == 2
+            assert usage.recurring_events.limit == 5
             assert usage.ical_subscriptions.used == 1
             assert usage.proposals.used == 18
             assert usage.proposals.limit == 500
