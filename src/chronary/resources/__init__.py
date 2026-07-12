@@ -14,6 +14,7 @@ from .terms import AsyncTerms, Terms
 from .usage import AsyncUsage, Usage
 from .waitlist import AsyncWaitlist, Waitlist
 from .webhooks import AsyncWebhooks, Webhooks
+from .connection_links import AsyncConnectionLinks, ConnectionLinks
 
 __all__ = [
     "Account",
@@ -52,4 +53,6 @@ __all__ = [
     "AsyncWaitlist",
     "Webhooks",
     "AsyncWebhooks",
+    "ConnectionLinks",
+    "AsyncConnectionLinks",
 ]

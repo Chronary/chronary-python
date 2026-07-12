@@ -36,6 +36,8 @@ from .resources import (
     Usage,
     Waitlist,
     Webhooks,
+    ConnectionLinks,
+    AsyncConnectionLinks,
 )
 
 if TYPE_CHECKING:
@@ -61,6 +63,7 @@ class Chronary(SyncAPIClient):
     _agent_auth: AgentAuth | None
     _waitlist: Waitlist | None
     _account: Account | None
+    _connection_links: ConnectionLinks | None
 
     def __init__(
         self,
@@ -96,6 +99,7 @@ class Chronary(SyncAPIClient):
         self._agent_auth = None
         self._waitlist = None
         self._account = None
+        self._connection_links = None
 
     @property
     def agents(self) -> Agents:
@@ -126,6 +130,12 @@ class Chronary(SyncAPIClient):
         if self._ical_subscriptions is None:
             self._ical_subscriptions = ICalSubscriptions(self)
         return self._ical_subscriptions
+
+    @property
+    def connection_links(self) -> ConnectionLinks:
+        if self._connection_links is None:
+            self._connection_links = ConnectionLinks(self)
+        return self._connection_links
 
     @property
     def availability(self) -> Availability:
@@ -219,6 +229,7 @@ class AsyncChronary(AsyncAPIClient):
     _agent_auth: AsyncAgentAuth | None
     _waitlist: AsyncWaitlist | None
     _account: AsyncAccount | None
+    _connection_links: AsyncConnectionLinks | None
 
     def __init__(
         self,
@@ -254,6 +265,7 @@ class AsyncChronary(AsyncAPIClient):
         self._agent_auth = None
         self._waitlist = None
         self._account = None
+        self._connection_links = None
 
     @property
     def agents(self) -> AsyncAgents:
@@ -284,6 +296,12 @@ class AsyncChronary(AsyncAPIClient):
         if self._ical_subscriptions is None:
             self._ical_subscriptions = AsyncICalSubscriptions(self)
         return self._ical_subscriptions
+
+    @property
+    def connection_links(self) -> AsyncConnectionLinks:
+        if self._connection_links is None:
+            self._connection_links = AsyncConnectionLinks(self)
+        return self._connection_links
 
     @property
     def availability(self) -> AsyncAvailability:

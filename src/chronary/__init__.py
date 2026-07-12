@@ -63,6 +63,7 @@ from .resources.ical_subscriptions import (
     ICalSubscriptionUpdateParams,
 )
 from .resources.keys import CreatedScopedApiKey, ScopedApiKey, ScopedApiKeyCreateParams
+from .resources.connection_links import ConnectionLink
 from .resources.plans import Plan, PlanId, PlanLimits, PlansListResponse
 from .resources.scheduling import (
     CancelProposalResponse,
@@ -149,6 +150,8 @@ __all__ = [
     "ICalSubscriptionCreateParams",
     "ICalSubscriptionUpdateParams",
     "ICalSubscriptionListParams",
+    # Human calendar setup
+    "ConnectionLink",
     # Scheduling
     "Proposal",
     "ProposalSummary",
