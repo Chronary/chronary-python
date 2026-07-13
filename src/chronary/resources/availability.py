@@ -25,12 +25,30 @@ class BusyBlock(ChronaryModel):
     calendar_id: str | None = None
 
 
+class AvailabilitySources(ChronaryModel):
+    """Provider-neutral availability source health."""
+
+    chronary: Literal["current"]
+    external: Literal["current", "stale", "partial", "unavailable"]
+    last_synced_at: str | None = None
+
+
+class AvailabilityWarning(ChronaryModel):
+    """A warning that prevents treating slots as complete."""
+
+    code: Literal["availability_incomplete"]
+    message: str
+
+
 class AgentAvailabilityResponse(ChronaryModel):
     """Availability response for one or more agents."""
 
     agents: list[str]
     slots: list[TimeSlot]
     per_agent_busy: dict[str, list[BusyBlock]] | None = None
+    availability_state: Literal["complete", "stale", "partial", "unavailable"]
+    sources: AvailabilitySources
+    warnings: list[AvailabilityWarning]
 
 
 class CalendarAvailabilityResponse(ChronaryModel):
@@ -39,6 +57,9 @@ class CalendarAvailabilityResponse(ChronaryModel):
     calendar_id: str
     slots: list[TimeSlot]
     busy: list[BusyBlock] | None = None
+    availability_state: Literal["complete", "stale", "partial", "unavailable"]
+    sources: AvailabilitySources
+    warnings: list[AvailabilityWarning]
 
 
 # ---------------------------------------------------------------------------
@@ -62,6 +83,7 @@ class Availability(SyncAPIResource):
         duration: Literal["15m", "30m", "45m", "1h", "2h"] | None = None,
         slot_duration: Literal["15m", "30m", "45m", "1h", "2h"] | None = None,
         include_busy: bool | None = None,
+        allow_stale: bool | None = None,
         max_retries: int | None = None,
     ) -> AgentAvailabilityResponse:
         """Get availability slots for an agent.
@@ -82,6 +104,7 @@ class Availability(SyncAPIResource):
             "duration": duration,
             "slot_duration": slot_duration,
             "include_busy": "true" if include_busy else None,
+            "allow_stale": "true" if allow_stale else None,
         }
         resp = self._request("GET", path, params=params, max_retries=max_retries)
         return self._build(AgentAvailabilityResponse, resp)
@@ -95,6 +118,7 @@ class Availability(SyncAPIResource):
         duration: Literal["15m", "30m", "45m", "1h", "2h"] | None = None,
         slot_duration: Literal["15m", "30m", "45m", "1h", "2h"] | None = None,
         include_busy: bool | None = None,
+        allow_stale: bool | None = None,
         max_retries: int | None = None,
     ) -> CalendarAvailabilityResponse:
         """Get availability slots for a calendar.
@@ -115,6 +139,7 @@ class Availability(SyncAPIResource):
             "duration": duration,
             "slot_duration": slot_duration,
             "include_busy": "true" if include_busy else None,
+            "allow_stale": "true" if allow_stale else None,
         }
         resp = self._request("GET", path, params=params, max_retries=max_retries)
         return self._build(CalendarAvailabilityResponse, resp)
@@ -129,6 +154,7 @@ class Availability(SyncAPIResource):
         slot_duration: Literal["15m", "30m", "45m", "1h", "2h"] | None = None,
         calendars: list[str] | None = None,
         include_busy: bool | None = None,
+        allow_stale: bool | None = None,
         max_retries: int | None = None,
     ) -> AgentAvailabilityResponse:
         """Find a common meeting time across agents.
@@ -151,6 +177,7 @@ class Availability(SyncAPIResource):
             "slot_duration": slot_duration,
             "calendars": ",".join(calendars) if calendars else None,
             "include_busy": "true" if include_busy else None,
+            "allow_stale": "true" if allow_stale else None,
         }
         resp = self._request(
             "GET", _CROSS_AVAIL_PATH, params=params, max_retries=max_retries
@@ -175,6 +202,7 @@ class AsyncAvailability(AsyncAPIResource):
         duration: Literal["15m", "30m", "45m", "1h", "2h"] | None = None,
         slot_duration: Literal["15m", "30m", "45m", "1h", "2h"] | None = None,
         include_busy: bool | None = None,
+        allow_stale: bool | None = None,
         max_retries: int | None = None,
     ) -> AgentAvailabilityResponse:
         """Get availability slots for an agent.
@@ -195,6 +223,7 @@ class AsyncAvailability(AsyncAPIResource):
             "duration": duration,
             "slot_duration": slot_duration,
             "include_busy": "true" if include_busy else None,
+            "allow_stale": "true" if allow_stale else None,
         }
         resp = await self._request("GET", path, params=params, max_retries=max_retries)
         return self._build(AgentAvailabilityResponse, resp)
@@ -208,6 +237,7 @@ class AsyncAvailability(AsyncAPIResource):
         duration: Literal["15m", "30m", "45m", "1h", "2h"] | None = None,
         slot_duration: Literal["15m", "30m", "45m", "1h", "2h"] | None = None,
         include_busy: bool | None = None,
+        allow_stale: bool | None = None,
         max_retries: int | None = None,
     ) -> CalendarAvailabilityResponse:
         """Get availability slots for a calendar.
@@ -228,6 +258,7 @@ class AsyncAvailability(AsyncAPIResource):
             "duration": duration,
             "slot_duration": slot_duration,
             "include_busy": "true" if include_busy else None,
+            "allow_stale": "true" if allow_stale else None,
         }
         resp = await self._request("GET", path, params=params, max_retries=max_retries)
         return self._build(CalendarAvailabilityResponse, resp)
@@ -242,6 +273,7 @@ class AsyncAvailability(AsyncAPIResource):
         slot_duration: Literal["15m", "30m", "45m", "1h", "2h"] | None = None,
         calendars: list[str] | None = None,
         include_busy: bool | None = None,
+        allow_stale: bool | None = None,
         max_retries: int | None = None,
     ) -> AgentAvailabilityResponse:
         """Find a common meeting time across agents.
@@ -264,6 +296,7 @@ class AsyncAvailability(AsyncAPIResource):
             "slot_duration": slot_duration,
             "calendars": ",".join(calendars) if calendars else None,
             "include_busy": "true" if include_busy else None,
+            "allow_stale": "true" if allow_stale else None,
         }
         resp = await self._request(
             "GET", _CROSS_AVAIL_PATH, params=params, max_retries=max_retries

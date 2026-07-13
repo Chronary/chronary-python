@@ -13,7 +13,14 @@ from chronary import (
 
 BASE = "https://api.chronary.ai"
 
+HEALTH = {
+    "availability_state": "complete",
+    "sources": {"chronary": "current", "external": "current", "last_synced_at": None},
+    "warnings": [],
+}
+
 AGENT_AVAIL_DATA = {
+    **HEALTH,
     "agents": ["agt_abc123"],
     "slots": [
         {"start": "2026-03-28T10:00:00Z", "end": "2026-03-28T10:30:00Z"},
@@ -35,6 +42,7 @@ AGENT_AVAIL_WITH_BUSY = {
 }
 
 CALENDAR_AVAIL_DATA = {
+    **HEALTH,
     "calendar_id": "cal_abc123",
     "slots": [
         {"start": "2026-03-28T10:00:00Z", "end": "2026-03-28T10:30:00Z"},
@@ -49,6 +57,7 @@ CALENDAR_AVAIL_WITH_BUSY = {
 }
 
 CROSS_AVAIL_DATA = {
+    **HEALTH,
     "agents": ["agt_1", "agt_2"],
     "slots": [
         {"start": "2026-03-28T14:00:00Z", "end": "2026-03-28T14:30:00Z"},
@@ -64,7 +73,7 @@ CROSS_AVAIL_DATA = {
 class TestSyncAvailability:
     @respx.mock
     def test_get_agent(self) -> None:
-        respx.get(f"{BASE}/v1/agents/agt_abc123/availability").mock(
+        route = respx.get(f"{BASE}/v1/agents/agt_abc123/availability").mock(
             return_value=httpx.Response(200, json=AGENT_AVAIL_DATA)
         )
         with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
@@ -72,12 +81,15 @@ class TestSyncAvailability:
                 "agt_abc123",
                 start="2026-03-28T09:00:00Z",
                 end="2026-03-28T17:00:00Z",
+                allow_stale=True,
             )
             assert isinstance(result, AgentAvailabilityResponse)
             assert result.agents == ["agt_abc123"]
             assert len(result.slots) == 2
             assert isinstance(result.slots[0], TimeSlot)
             assert result.per_agent_busy is None
+            assert result.availability_state == "complete"
+            assert route.calls.last.request.url.params.get("allow_stale") == "true"
 
     @respx.mock
     def test_get_agent_with_busy(self) -> None:

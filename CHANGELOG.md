@@ -2,6 +2,10 @@
 
 All notable changes to `chronary` (Python SDK) will be documented in this file starting with the soft-launch release.
 
+## 0.6.0 — 2026-07-12
+
+- Add sync and async `allow_stale` support plus typed availability completeness, source health, and warnings.
+
 ## 0.5.1 — 2026-07-12
 
 - Add connection-link APIs so agents can request and monitor human calendar setup without receiving provider credentials or calendar details.

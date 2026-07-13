@@ -29,6 +29,8 @@ from .resources.agents import (
 )
 from .resources.availability import (
     AgentAvailabilityResponse,
+    AvailabilitySources,
+    AvailabilityWarning,
     BusyBlock,
     CalendarAvailabilityResponse,
     TimeSlot,
@@ -170,6 +172,8 @@ __all__ = [
     "AcceptTermsParams",
     # Availability
     "AgentAvailabilityResponse",
+    "AvailabilitySources",
+    "AvailabilityWarning",
     "CalendarAvailabilityResponse",
     "TimeSlot",
     "BusyBlock",
