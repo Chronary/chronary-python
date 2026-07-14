@@ -21,7 +21,7 @@ _BOOKING_PAGES_PATH = "/v1/booking-pages"
 
 
 class BookingPage(ChronaryModel):
-    """A public booking page (Calendly-style scheduling link)."""
+    """A public booking page (a hosted scheduling link)."""
 
     id: str
     org_id: str

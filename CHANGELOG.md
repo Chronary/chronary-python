@@ -2,6 +2,10 @@
 
 All notable changes to `chronary` (Python SDK) will be documented in this file starting with the soft-launch release.
 
+## 0.7.1 — 2026-07-14
+
+- Add the `booking_pages` field to `UsageResponse` (it was omitted). Neutral wording for the booking-page resource docstring.
+
 ## 0.7.0 — 2026-07-14
 
 - Add the `booking_pages` resource (sync + async CRUD) for agent-created public scheduling links (#1036).

@@ -50,6 +50,8 @@ class UsageResponse(ChronaryModel):
     events: ResourceUsage
     # Active recurring series masters. Plan-capped: Free 5, Pro 250.
     recurring_events: ResourceUsage
+    # Active public booking pages. Plan-capped: Free 1, Pro 25.
+    booking_pages: ResourceUsage
     api_calls: ResourceUsage
     webhooks: ResourceUsage
     availability_queries: ResourceUsage
