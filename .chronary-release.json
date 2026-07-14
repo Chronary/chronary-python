@@ -1,9 +1,9 @@
 {
   "artifact": "python-sdk",
-  "version": "0.6.0",
-  "public_tag": "v0.6.0",
-  "private_source_sha": "12170a1a817b2b5730e3b9502e9214bc0d5896ca",
-  "private_release_tag": "public-release/20260713.1-12170a1",
+  "version": "0.7.0",
+  "public_tag": "v0.7.0",
+  "private_source_sha": "da0d906db5997fd7600873775ab1aca1101dc75a",
+  "private_release_tag": "public-release/20260714.5-da0d906",
   "publish_registry": true,
-  "generated_at": "2026-07-13T06:41:26.651Z"
+  "generated_at": "2026-07-14T10:38:13.717Z"
 }

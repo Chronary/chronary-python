@@ -11,6 +11,7 @@ from .resources import (
     AsyncAgentAuth,
     AsyncAgents,
     AsyncAvailability,
+    AsyncBookingPages,
     AsyncCalendars,
     AsyncEvents,
     AsyncFeedback,
@@ -25,6 +26,7 @@ from .resources import (
     AsyncWebhooks,
     AuditLog,
     Availability,
+    BookingPages,
     Calendars,
     Events,
     Feedback,
@@ -49,6 +51,7 @@ class Chronary(SyncAPIClient):
 
     _agents: Agents | None
     _calendars: Calendars | None
+    _booking_pages: BookingPages | None
     _events: Events | None
     _webhooks: Webhooks | None
     _ical_subscriptions: ICalSubscriptions | None
@@ -85,6 +88,7 @@ class Chronary(SyncAPIClient):
         )
         self._agents = None
         self._calendars = None
+        self._booking_pages = None
         self._events = None
         self._webhooks = None
         self._ical_subscriptions = None
@@ -112,6 +116,12 @@ class Chronary(SyncAPIClient):
         if self._calendars is None:
             self._calendars = Calendars(self)
         return self._calendars
+
+    @property
+    def booking_pages(self) -> BookingPages:
+        if self._booking_pages is None:
+            self._booking_pages = BookingPages(self)
+        return self._booking_pages
 
     @property
     def events(self) -> Events:
@@ -215,6 +225,7 @@ class AsyncChronary(AsyncAPIClient):
 
     _agents: AsyncAgents | None
     _calendars: AsyncCalendars | None
+    _booking_pages: AsyncBookingPages | None
     _events: AsyncEvents | None
     _webhooks: AsyncWebhooks | None
     _ical_subscriptions: AsyncICalSubscriptions | None
@@ -251,6 +262,7 @@ class AsyncChronary(AsyncAPIClient):
         )
         self._agents = None
         self._calendars = None
+        self._booking_pages = None
         self._events = None
         self._webhooks = None
         self._ical_subscriptions = None
@@ -278,6 +290,12 @@ class AsyncChronary(AsyncAPIClient):
         if self._calendars is None:
             self._calendars = AsyncCalendars(self)
         return self._calendars
+
+    @property
+    def booking_pages(self) -> AsyncBookingPages:
+        if self._booking_pages is None:
+            self._booking_pages = AsyncBookingPages(self)
+        return self._booking_pages
 
     @property
     def events(self) -> AsyncEvents:

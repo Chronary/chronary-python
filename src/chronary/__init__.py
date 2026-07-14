@@ -47,6 +47,12 @@ from .resources.calendars import (
     WorkingHoursDay,
     WorkingHoursParams,
 )
+from .resources.booking_pages import (
+    BookingPage,
+    BookingPageCreateParams,
+    BookingPageListParams,
+    BookingPageUpdateParams,
+)
 from .resources.events import (
     Event,
     EventCreateParams,
@@ -128,6 +134,11 @@ __all__ = [
     "SetAvailabilityRulesParams",
     "WorkingHoursParams",
     "WorkingHoursDay",
+    # Booking pages
+    "BookingPage",
+    "BookingPageCreateParams",
+    "BookingPageUpdateParams",
+    "BookingPageListParams",
     # Event
     "Event",
     "EventCreateParams",

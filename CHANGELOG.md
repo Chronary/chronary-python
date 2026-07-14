@@ -2,6 +2,10 @@
 
 All notable changes to `chronary` (Python SDK) will be documented in this file starting with the soft-launch release.
 
+## 0.7.0 — 2026-07-14
+
+- Add the `booking_pages` resource (sync + async CRUD) for agent-created public scheduling links (#1036).
+
 ## 0.6.0 — 2026-07-12
 
 - Add sync and async `allow_stale` support plus typed availability completeness, source health, and warnings.

@@ -3,6 +3,7 @@ from .audit_log import AsyncAuditLog, AuditLog
 from .agent_auth import AgentAuth, AsyncAgentAuth
 from .agents import Agents, AsyncAgents
 from .availability import AsyncAvailability, Availability
+from .booking_pages import AsyncBookingPages, BookingPages
 from .calendars import AgentCalendars, AsyncAgentCalendars, AsyncCalendars, Calendars
 from .events import AgentEvents, AsyncAgentEvents, AsyncEvents, Events
 from .feedback import AsyncFeedback, Feedback
@@ -27,6 +28,8 @@ __all__ = [
     "AsyncAgents",
     "Availability",
     "AsyncAvailability",
+    "BookingPages",
+    "AsyncBookingPages",
     "Calendars",
     "AsyncCalendars",
     "AgentCalendars",
