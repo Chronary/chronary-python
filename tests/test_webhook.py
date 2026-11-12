@@ -155,3 +155,62 @@ class TestUnwrap:
         payload = b"not json"
         with pytest.raises(ValueError):
             unwrap(payload, _valid_headers(payload), secret=SECRET)
+
+
+class TestSecretRotation:
+    """#594: during a rotation's grace window deliveries carry both headers."""
+
+    OLD = "whsec_old"
+    NEW = "whsec_new"
+
+    def _rotated_headers(self, payload: bytes, *, ts: int | None = None) -> dict[str, str]:
+        ts_str = str(ts if ts is not None else int(time.time()))
+        return {
+            "X-Signature": _sign(payload, ts_str, self.NEW),
+            "X-Signature-Previous": _sign(payload, ts_str, self.OLD),
+            "X-Timestamp": ts_str,
+            "X-Chronary-Event-Type": "event.created",
+        }
+
+    def test_accepts_new_secret_via_x_signature(self) -> None:
+        payload = b'{"event":{"id":"evt_1"}}'
+        verify_signature(payload, self._rotated_headers(payload), secret=self.NEW)
+
+    def test_accepts_old_secret_via_x_signature_previous(self) -> None:
+        payload = b'{"event":{"id":"evt_1"}}'
+        verify_signature(payload, self._rotated_headers(payload), secret=self.OLD)
+
+    def test_previous_header_lookup_is_case_insensitive(self) -> None:
+        payload = b'{"event":{"id":"evt_1"}}'
+        lower = {k.lower(): v for k, v in self._rotated_headers(payload).items()}
+        verify_signature(payload, lower, secret=self.OLD)
+
+    def test_rejects_when_neither_header_matches(self) -> None:
+        payload = b'{"event":{"id":"evt_1"}}'
+        with pytest.raises(SignatureVerificationError, match="Signature mismatch"):
+            verify_signature(payload, self._rotated_headers(payload), secret="whsec_other")
+
+    def test_rejects_old_secret_after_the_window(self) -> None:
+        payload = b'{"event":{"id":"evt_1"}}'
+        headers = self._rotated_headers(payload)
+        del headers["X-Signature-Previous"]
+        with pytest.raises(SignatureVerificationError, match="Signature mismatch"):
+            verify_signature(payload, headers, secret=self.OLD)
+
+    def test_still_requires_x_signature(self) -> None:
+        payload = b'{"event":{"id":"evt_1"}}'
+        headers = self._rotated_headers(payload)
+        del headers["X-Signature"]
+        with pytest.raises(SignatureVerificationError, match="Missing X-Signature"):
+            verify_signature(payload, headers, secret=self.OLD)
+
+    def test_previous_signature_does_not_bypass_timestamp_check(self) -> None:
+        payload = b'{"event":{"id":"evt_1"}}'
+        headers = self._rotated_headers(payload, ts=int(time.time()) - 3600)
+        with pytest.raises(SignatureVerificationError, match="tolerance"):
+            verify_signature(payload, headers, secret=self.OLD)
+
+    def test_unwrap_with_old_secret(self) -> None:
+        payload = b'{"event":{"id":"evt_1"}}'
+        event = unwrap(payload, self._rotated_headers(payload), secret=self.OLD)
+        assert event["type"] == "event.created"

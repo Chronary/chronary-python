@@ -6,6 +6,11 @@ Chronary signs each webhook delivery with HMAC-SHA256 over
 - ``X-Timestamp`` — unix seconds as a decimal string
 - ``X-Signature`` — ``sha256=<hex_digest>``
 
+During a secret rotation's grace window it also sends ``X-Signature-Previous``
+(same format, same timestamp) signed with the replaced secret. Verification
+passes when your secret matches either header, so you can switch secrets at
+any point in the window.
+
 Both ``verify_signature`` and ``unwrap`` accept either a ``dict`` of
 header name → value or an object with a ``.get(name)`` method (e.g.
 ``http.client.HTTPMessage``, ``starlette.datastructures.Headers``).
@@ -90,7 +95,8 @@ def verify_signature(
         payload: The raw request body (bytes or UTF-8 string). Pass the
             exact bytes you received — do not re-serialize JSON.
         headers: A dict or Headers-like object containing ``X-Signature``
-            and ``X-Timestamp``. Lookup is case-insensitive.
+            and ``X-Timestamp`` (and ``X-Signature-Previous`` during a secret
+            rotation). Lookup is case-insensitive.
         secret: The webhook signing secret (returned at webhook creation
             as ``whsec_...``).
         tolerance: Max seconds between the signed timestamp and now.
@@ -111,6 +117,8 @@ def verify_signature(
         )
 
     signature = _get_header(headers, "X-Signature")
+    # Sent during a secret rotation's grace window, signed with the replaced secret.
+    previous_signature = _get_header(headers, "X-Signature-Previous")
     timestamp = _get_header(headers, "X-Timestamp")
 
     if not signature:
@@ -133,7 +141,12 @@ def verify_signature(
         )
 
     expected = _compute_signature(secret, timestamp, payload_bytes)
-    if not hmac.compare_digest(expected, signature):
+    # Both comparisons always run, in constant time.
+    matches_current = hmac.compare_digest(expected, signature)
+    matches_previous = bool(previous_signature) and hmac.compare_digest(
+        expected, previous_signature or ""
+    )
+    if not (matches_current or matches_previous):
         raise SignatureVerificationError("Signature mismatch")
 
 

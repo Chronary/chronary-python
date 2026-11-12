@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime  # noqa: TCH003 — Pydantic needs this at runtime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import Field
 from typing_extensions import NotRequired, Required, TypedDict
@@ -9,6 +9,9 @@ from typing_extensions import NotRequired, Required, TypedDict
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
 from ..pagination import AsyncPager, ListResponse, SyncPager
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 # Sentinel for distinguishing "not passed" from "explicitly passed None"
 _UNSET: Any = object()
@@ -121,6 +124,7 @@ class EventListParams(TypedDict, total=False):
 
 _EVENTS_PATH = "/v1/calendars/{calendar_id}/events"
 _EVENT_BY_ID_PATH = "/v1/events/{event_id}"
+_ORG_EVENTS_PATH = "/v1/events"
 _EVENTS_CONFIRM_PATH = "/v1/events/{event_id}/confirm"
 _EVENTS_RELEASE_PATH = "/v1/events/{event_id}/release"
 
@@ -222,6 +226,58 @@ class Events(SyncAPIResource):
             list_resp,
             client=self._client,
             path=path,
+            params=params,
+            model=Event,
+            request_id=resp.headers.get("X-Request-Id"),
+        )
+
+    def list_all(
+        self,
+        *,
+        calendar_id: str | Sequence[str] | None = None,
+        agent_id: str | None = None,
+        start_after: str | None = None,
+        start_before: str | None = None,
+        status: EventStatus | None = None,
+        source: Literal["internal", "external_ical"] | None = None,
+        q: str | None = None,
+        expand: bool | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        max_retries: int | None = None,
+    ) -> SyncPager[Event]:
+        """List events across all of the organization's calendars (``GET /v1/events``).
+
+        Ordered by start time. An agent-scoped key sees only its agent's
+        calendars. ``calendar_id`` accepts one id or a list (at most 50).
+        ``q`` searches titles case-insensitively and requires ``start_after``
+        and ``start_before`` at most 31 days apart. ``limit`` is at most 100.
+        """
+        params: dict[str, Any] = {
+            # A list goes over the wire as repeated calendar_id parameters.
+            "calendar_id": calendar_id,
+            "agent_id": agent_id,
+            "start_after": start_after,
+            "start_before": start_before,
+            "status": status,
+            "source": source,
+            "q": q,
+            "limit": limit,
+            "offset": offset,
+            "expand": None if expand is None else ("true" if expand else "false"),
+        }
+        resp = self._request("GET", _ORG_EVENTS_PATH, params=params, max_retries=max_retries)
+        raw = resp.json()
+        list_resp = ListResponse[Event](
+            data=[Event.model_validate(item) for item in raw["data"]],
+            total=raw["total"],
+            limit=raw["limit"],
+            offset=raw["offset"],
+        )
+        return SyncPager(
+            list_resp,
+            client=self._client,
+            path=_ORG_EVENTS_PATH,
             params=params,
             model=Event,
             request_id=resp.headers.get("X-Request-Id"),
@@ -507,6 +563,58 @@ class AsyncEvents(AsyncAPIResource):
             list_resp,
             client=self._client,
             path=path,
+            params=params,
+            model=Event,
+            request_id=resp.headers.get("X-Request-Id"),
+        )
+
+    async def list_all(
+        self,
+        *,
+        calendar_id: str | Sequence[str] | None = None,
+        agent_id: str | None = None,
+        start_after: str | None = None,
+        start_before: str | None = None,
+        status: EventStatus | None = None,
+        source: Literal["internal", "external_ical"] | None = None,
+        q: str | None = None,
+        expand: bool | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        max_retries: int | None = None,
+    ) -> AsyncPager[Event]:
+        """List events across all of the organization's calendars (``GET /v1/events``).
+
+        Ordered by start time. An agent-scoped key sees only its agent's
+        calendars. ``calendar_id`` accepts one id or a list (at most 50).
+        ``q`` searches titles case-insensitively and requires ``start_after``
+        and ``start_before`` at most 31 days apart. ``limit`` is at most 100.
+        """
+        params: dict[str, Any] = {
+            # A list goes over the wire as repeated calendar_id parameters.
+            "calendar_id": calendar_id,
+            "agent_id": agent_id,
+            "start_after": start_after,
+            "start_before": start_before,
+            "status": status,
+            "source": source,
+            "q": q,
+            "limit": limit,
+            "offset": offset,
+            "expand": None if expand is None else ("true" if expand else "false"),
+        }
+        resp = await self._request("GET", _ORG_EVENTS_PATH, params=params, max_retries=max_retries)
+        raw = resp.json()
+        list_resp = ListResponse[Event](
+            data=[Event.model_validate(item) for item in raw["data"]],
+            total=raw["total"],
+            limit=raw["limit"],
+            offset=raw["offset"],
+        )
+        return AsyncPager(
+            list_resp,
+            client=self._client,
+            path=_ORG_EVENTS_PATH,
             params=params,
             model=Event,
             request_id=resp.headers.get("X-Request-Id"),

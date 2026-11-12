@@ -214,6 +214,19 @@ class TestSleepTime:
     def test_respects_retry_after(self) -> None:
         assert _sleep_time(0, "2") == 2.0
 
+    def test_caps_long_retry_after(self) -> None:
+        # Monthly quota 429: Retry-After is seconds to the end of the month.
+        assert _sleep_time(0, "1555200") == 60.0
+        # Daily feedback cap: seconds to the next UTC midnight.
+        assert _sleep_time(1, "6600") == 60.0
+
+    def test_negative_retry_after_clamped_to_zero(self) -> None:
+        assert _sleep_time(0, "-5") == 0.0
+
+    def test_nan_retry_after_falls_back(self) -> None:
+        result = _sleep_time(0, "nan")
+        assert 0 < result <= 8.0 * 1.25
+
     def test_invalid_retry_after_falls_back(self) -> None:
         result = _sleep_time(0, "not-a-number")
         assert result > 0

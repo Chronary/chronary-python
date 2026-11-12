@@ -3,7 +3,7 @@ from __future__ import annotations
 import httpx
 import respx
 
-from chronary import AsyncChronary, BookingPage, Chronary
+from chronary import AsyncChronary, Booking, BookingList, BookingPage, Chronary
 from chronary.pagination import AsyncPager, SyncPager
 
 BASE = "https://api.chronary.ai"
@@ -214,3 +214,98 @@ class TestAsyncBookingPages:
         )
         async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             assert await client.booking_pages.delete("bkp_abc123") is None
+
+
+BOOKING_DATA = {
+    "id": "evt_abc123",
+    "booking_page_id": "bkp_abc123",
+    "calendar_id": "cal_abc123",
+    "start_time": "2026-07-15T16:00:00Z",
+    "end_time": "2026-07-15T16:30:00Z",
+    "status": "confirmed",
+    "invitee_name": "Ada",
+    "invitee_email": "ada@example.com",
+    "invitee_notes": None,
+    "created_at": "2026-07-14T10:00:00Z",
+}
+
+
+class TestBookingPagesBookingsAndRotation:
+    """#1202: calendar filter, bookings list and link rotation."""
+
+    @respx.mock
+    def test_list_passes_calendar_id(self) -> None:
+        route = respx.get(f"{BASE}/v1/booking-pages").mock(
+            return_value=httpx.Response(200, json=LIST_RESPONSE)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            client.booking_pages.list(calendar_id="cal_abc123")
+            assert route.calls[0].request.url.params["calendar_id"] == "cal_abc123"
+
+    @respx.mock
+    def test_list_bookings(self) -> None:
+        route = respx.get(f"{BASE}/v1/booking-pages/bkp_abc123/bookings").mock(
+            return_value=httpx.Response(200, json={"data": [BOOKING_DATA], "next_cursor": "next"})
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            page = client.booking_pages.list_bookings("bkp_abc123", limit=10, cursor="abc")
+            assert isinstance(page, BookingList)
+            assert isinstance(page.data[0], Booking)
+            assert page.data[0].invitee_email == "ada@example.com"
+            assert page.data[0].invitee_notes is None
+            assert page.next_cursor == "next"
+            params = route.calls[0].request.url.params
+            assert params["limit"] == "10"
+            assert params["cursor"] == "abc"
+
+    @respx.mock
+    def test_list_bookings_without_params(self) -> None:
+        route = respx.get(f"{BASE}/v1/booking-pages/bkp_abc123/bookings").mock(
+            return_value=httpx.Response(200, json={"data": [], "next_cursor": None})
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            page = client.booking_pages.list_bookings("bkp_abc123")
+            assert page.data == []
+            assert page.next_cursor is None
+            assert "cursor" not in route.calls[0].request.url.params
+
+    @respx.mock
+    def test_rotate_slug(self) -> None:
+        rotated = {**BOOKING_PAGE_DATA, "slug": "newslug", "booking_url": "https://api.chronary.ai/book/newslug"}
+        route = respx.post(f"{BASE}/v1/booking-pages/bkp_abc123/rotate-slug").mock(
+            return_value=httpx.Response(200, json=rotated)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            page = client.booking_pages.rotate_slug("bkp_abc123")
+            assert isinstance(page, BookingPage)
+            assert page.slug == "newslug"
+            assert route.called
+
+    @respx.mock
+    async def test_async_list_passes_calendar_id(self) -> None:
+        route = respx.get(f"{BASE}/v1/booking-pages").mock(
+            return_value=httpx.Response(200, json=LIST_RESPONSE)
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            await client.booking_pages.list(calendar_id="cal_abc123")
+            assert route.calls[0].request.url.params["calendar_id"] == "cal_abc123"
+
+    @respx.mock
+    async def test_async_list_bookings(self) -> None:
+        respx.get(f"{BASE}/v1/booking-pages/bkp_abc123/bookings").mock(
+            return_value=httpx.Response(200, json={"data": [BOOKING_DATA], "next_cursor": None})
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            page = await client.booking_pages.list_bookings("bkp_abc123")
+            assert page.data[0].id == "evt_abc123"
+            assert page.next_cursor is None
+
+    @respx.mock
+    async def test_async_rotate_slug(self) -> None:
+        rotated = {**BOOKING_PAGE_DATA, "slug": "newslug"}
+        respx.post(f"{BASE}/v1/booking-pages/bkp_abc123/rotate-slug").mock(
+            return_value=httpx.Response(200, json=rotated)
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            page = await client.booking_pages.rotate_slug("bkp_abc123")
+            assert page.slug == "newslug"

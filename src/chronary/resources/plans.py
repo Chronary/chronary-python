@@ -10,7 +10,8 @@ from .._resource import AsyncAPIResource, SyncAPIResource
 # ---------------------------------------------------------------------------
 
 
-PlanId = Literal["free", "pro", "custom"]
+# Known plan ids; the `| str` keeps older clients from rejecting a plan id added later.
+PlanId = Literal["free", "developer", "pro", "custom"] | str
 
 
 class PlanLimits(ChronaryModel):
@@ -41,6 +42,9 @@ class Plan(ChronaryModel):
     `None` for custom-priced tiers."""
     currency: str | None = None
     """Lowercase ISO-4217 code. `None` for custom-priced tiers."""
+    annual_price: int | None = None
+    """Yearly amount in the smallest currency unit (10x monthly) when the plan
+    can be billed annually. `None` for Free and custom-priced tiers."""
     limits: PlanLimits | None = None
     """Enforced caps. `None` for custom-priced tiers."""
     display_features: list[str]

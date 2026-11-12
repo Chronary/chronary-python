@@ -10,7 +10,9 @@ from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
 from ..pagination import AsyncPager, ListResponse, SyncPager
 
-ProposalStatus = Literal["pending", "confirmed", "expired", "cancelled"]
+# "resolving" is the brief state while a resolve creates the event; it returns
+# to "pending" if the resolve fails.
+ProposalStatus = Literal["pending", "resolving", "confirmed", "expired", "cancelled"]
 ProposalResponseAction = Literal["accept", "decline", "counter"]
 
 

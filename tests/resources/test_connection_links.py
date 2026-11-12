@@ -32,3 +32,22 @@ async def test_async_connection_link_lifecycle() -> None:
         assert (await client.connection_links.create("cal_1", capabilities=["availability"])).id == "csl_1"
         assert (await client.connection_links.get("csl_1")).calendar_id == "cal_1"
         await client.connection_links.cancel("csl_1")
+
+
+@respx.mock
+def test_sync_connection_link_list() -> None:
+    route = respx.get(f"{BASE}/v1/connection-links").mock(return_value=httpx.Response(200, json={"data": [{**LINK, "requested_capabilities": ["availability"], "requested_publication_policy": None, "created_at": "2026-07-12T11:00:00Z"}]}))
+    with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+        links = client.connection_links.list(status="awaiting_human", calendar_id="cal_1", limit=5)
+        assert links[0].requested_capabilities == ["availability"]
+        assert dict(route.calls[0].request.url.params) == {"status": "awaiting_human", "calendar_id": "cal_1", "limit": "5"}
+        assert client.connection_links.list() == links
+        assert str(route.calls[1].request.url.params) == ""
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_async_connection_link_list() -> None:
+    respx.get(f"{BASE}/v1/connection-links").mock(return_value=httpx.Response(200, json={"data": []}))
+    async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+        assert await client.connection_links.list(limit=1) == []

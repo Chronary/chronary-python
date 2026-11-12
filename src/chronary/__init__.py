@@ -10,6 +10,7 @@ from ._exceptions import (
     InternalServerError,
     NotFoundError,
     PermissionDeniedError,
+    PlanRequiredError,
     QuotaExceededError,
     RateLimitError,
 )
@@ -47,7 +48,20 @@ from .resources.calendars import (
     WorkingHoursDay,
     WorkingHoursParams,
 )
+from .resources.billing import (
+    BillingCredit,
+    BillingInterval,
+    BillingPastDue,
+    BillingPrice,
+    BillingSummary,
+    BillingUpgradeOption,
+    UpgradeRequest,
+    UpgradeRequestStatus,
+)
 from .resources.booking_pages import (
+    Booking,
+    BookingList,
+    BookingListParams,
     BookingPage,
     BookingPageCreateParams,
     BookingPageListParams,
@@ -92,6 +106,10 @@ from .resources.usage import (
     CrossCalendarQueriesUsage,
     HoldsUsage,
     ResourceUsage,
+    UsageHistoryLimits,
+    UsageHistoryMetrics,
+    UsageHistoryMonth,
+    UsageHistoryResponse,
     UsageResponse,
 )
 from .resources.waitlist import (
@@ -134,11 +152,23 @@ __all__ = [
     "SetAvailabilityRulesParams",
     "WorkingHoursParams",
     "WorkingHoursDay",
+    # Billing
+    "BillingSummary",
+    "BillingPastDue",
+    "BillingCredit",
+    "BillingPrice",
+    "BillingUpgradeOption",
+    "BillingInterval",
+    "UpgradeRequest",
+    "UpgradeRequestStatus",
     # Booking pages
     "BookingPage",
     "BookingPageCreateParams",
     "BookingPageUpdateParams",
     "BookingPageListParams",
+    "Booking",
+    "BookingList",
+    "BookingListParams",
     # Event
     "Event",
     "EventCreateParams",
@@ -190,6 +220,10 @@ __all__ = [
     "BusyBlock",
     # Usage
     "UsageResponse",
+    "UsageHistoryResponse",
+    "UsageHistoryMonth",
+    "UsageHistoryMetrics",
+    "UsageHistoryLimits",
     "ResourceUsage",
     "HoldsUsage",
     "CrossCalendarQueriesUsage",
@@ -220,6 +254,7 @@ __all__ = [
     "BadRequestError",
     "AuthenticationError",
     "PermissionDeniedError",
+    "PlanRequiredError",
     "NotFoundError",
     "RateLimitError",
     "QuotaExceededError",

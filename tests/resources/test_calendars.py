@@ -318,3 +318,41 @@ class TestAsyncAgentCalendars:
             pager = await client.agents.calendars.list("agt_abc123")
             assert isinstance(pager, AsyncPager)
             assert len(pager.data) == 1
+
+
+# ---------------------------------------------------------------------------
+# Subscribe URL rotation and search (#1202)
+# ---------------------------------------------------------------------------
+
+
+class TestCalendarRotateAndSearch:
+    @respx.mock
+    def test_rotate_ical_token(self) -> None:
+        route = respx.post(f"{BASE}/v1/calendars/cal_abc123/ical-token/rotate").mock(
+            return_value=httpx.Response(
+                200, json={**CALENDAR_DATA, "ical_url": "https://ical.chronary.ai/ical/NEW.ics"}
+            )
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            cal = client.calendars.rotate_ical_token("cal_abc123")
+            assert isinstance(cal, Calendar)
+            assert cal.ical_url == "https://ical.chronary.ai/ical/NEW.ics"
+            assert route.called
+
+    @respx.mock
+    async def test_async_rotate_ical_token(self) -> None:
+        respx.post(f"{BASE}/v1/calendars/cal_abc123/ical-token/rotate").mock(
+            return_value=httpx.Response(200, json=CALENDAR_DATA)
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            cal = await client.calendars.rotate_ical_token("cal_abc123")
+            assert isinstance(cal, Calendar)
+
+    @respx.mock
+    def test_list_q(self) -> None:
+        route = respx.get(f"{BASE}/v1/calendars").mock(
+            return_value=httpx.Response(200, json={**LIST_RESPONSE, "next_cursor": None})
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            client.calendars.list(q="Sales")
+            assert route.calls[0].request.url.params["q"] == "Sales"

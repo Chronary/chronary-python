@@ -18,15 +18,16 @@ class ResourceUsage(ChronaryModel):
 class HoldsUsage(ChronaryModel):
     """Temporal-hold lifecycle counters.
 
-    Informational — not gated by any plan limit. The funnel identity
-    ``created == confirmed + expired + active`` holds, where ``active`` is
-    derived (not stored). Counts cover all three end-of-hold paths: TTL
-    expiry, manual release, and priority-bump.
+    Informational — not gated by any plan limit. ``created``, ``confirmed``
+    and ``expired`` are monthly counters; ``expired`` covers all three
+    end-of-hold paths: TTL expiry, manual release, and priority-bump.
+    ``active`` is a live count of unexpired holds, not a monthly counter.
     """
 
     created: int
     confirmed: int
     expired: int
+    active: int
 
 
 class CrossCalendarQueriesUsage(ChronaryModel):
@@ -44,6 +45,10 @@ class UsageResponse(ChronaryModel):
 
     period_start: str
     period_end: str
+    # First instant of the next UTC month, when monthly counters reset.
+    resets_at: str
+    # When this response was computed. API calls can lag by up to 30 seconds.
+    generated_at: str
     plan: str
     agents: ResourceUsage
     calendars: ResourceUsage
@@ -61,11 +66,57 @@ class UsageResponse(ChronaryModel):
     cross_calendar_queries: CrossCalendarQueriesUsage
 
 
+class UsageHistoryMetrics(ChronaryModel):
+    """Monthly counter totals for one UTC calendar month."""
+
+    api_calls: int
+    events: int
+    webhook_deliveries: int
+    availability_queries: int
+    proposals: int
+    holds_created: int
+    holds_confirmed: int
+    holds_expired: int
+    cross_calendar_queries: int
+
+
+class UsageHistoryMonth(ChronaryModel):
+    """One UTC calendar month of usage history."""
+
+    # ``YYYY-MM``.
+    period: str
+    period_start: str
+    period_end: str
+    # True only for the current, partial month (the last entry).
+    is_current: bool
+    metrics: UsageHistoryMetrics
+
+
+class UsageHistoryLimits(ChronaryModel):
+    """The current plan's limits for the limited monthly metrics (None = unlimited)."""
+
+    api_calls: int | None = None
+    events: int | None = None
+    webhook_deliveries: int | None = None
+    availability_queries: int | None = None
+    proposals: int | None = None
+
+
+class UsageHistoryResponse(ChronaryModel):
+    """Monthly usage totals, oldest month first, ending with the current month."""
+
+    plan: str
+    months: int
+    limits: UsageHistoryLimits
+    data: list[UsageHistoryMonth]
+
+
 # ---------------------------------------------------------------------------
 # Sync resource
 # ---------------------------------------------------------------------------
 
 _USAGE_PATH = "/v1/usage"
+_USAGE_HISTORY_PATH = "/v1/usage/history"
 
 
 class Usage(SyncAPIResource):
@@ -74,6 +125,16 @@ class Usage(SyncAPIResource):
     def get(self, *, max_retries: int | None = None) -> UsageResponse:
         resp = self._request("GET", _USAGE_PATH, max_retries=max_retries)
         return self._build(UsageResponse, resp)
+
+    def history(
+        self, months: int = 6, *, max_retries: int | None = None
+    ) -> UsageHistoryResponse:
+        """Monthly totals for the last 1-12 UTC calendar months (org keys only)."""
+        params = {"months": months}
+        resp = self._request(
+            "GET", _USAGE_HISTORY_PATH, params=params, max_retries=max_retries
+        )
+        return self._build(UsageHistoryResponse, resp)
 
 
 # ---------------------------------------------------------------------------
@@ -87,3 +148,13 @@ class AsyncUsage(AsyncAPIResource):
     async def get(self, *, max_retries: int | None = None) -> UsageResponse:
         resp = await self._request("GET", _USAGE_PATH, max_retries=max_retries)
         return self._build(UsageResponse, resp)
+
+    async def history(
+        self, months: int = 6, *, max_retries: int | None = None
+    ) -> UsageHistoryResponse:
+        """Monthly totals for the last 1-12 UTC calendar months (org keys only)."""
+        params = {"months": months}
+        resp = await self._request(
+            "GET", _USAGE_HISTORY_PATH, params=params, max_retries=max_retries
+        )
+        return self._build(UsageHistoryResponse, resp)

@@ -41,6 +41,20 @@ class TestSyncKeys:
             assert key.key == "chr_ak_SECRET"
 
     @respx.mock
+    def test_create_with_expires_in(self) -> None:
+        route = respx.post(f"{BASE}/v1/keys").mock(
+            return_value=httpx.Response(
+                201, json={**CREATED_KEY_DATA, "expires_at": "2026-07-16T16:20:00Z"}
+            )
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            key = client.keys.create(agent_id="agt_1", expires_in="90d")
+            assert key.expires_at is not None
+            assert key.expires_at.year == 2026
+        sent = route.calls[0].request.content
+        assert b'"expires_in":"90d"' in sent.replace(b" ", b"")
+
+    @respx.mock
     def test_list(self) -> None:
         respx.get(f"{BASE}/v1/keys").mock(
             return_value=httpx.Response(200, json={"keys": [LIST_KEY_DATA]})

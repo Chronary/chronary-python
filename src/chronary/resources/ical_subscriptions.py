@@ -152,9 +152,39 @@ class ICalSubscriptions(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> None:
+        """Start an immediate fetch of the feed (returns once it has started).
+
+        Read the subscription a few seconds later for ``last_synced_at`` /
+        ``last_error``. A paused feed raises a 409 error; a second sync of the
+        same feed within a minute raises a 429 error.
+        """
         self._request(
             "POST", f"{_ICAL_PATH}/{subscription_id}/sync", max_retries=max_retries
         )
+
+    def pause(
+        self,
+        subscription_id: str,
+        *,
+        max_retries: int | None = None,
+    ) -> ICalSubscription:
+        """Stop polling the feed until it is resumed. Pausing a paused feed changes nothing."""
+        resp = self._request(
+            "POST", f"{_ICAL_PATH}/{subscription_id}/pause", max_retries=max_retries
+        )
+        return self._build(ICalSubscription, resp)
+
+    def resume(
+        self,
+        subscription_id: str,
+        *,
+        max_retries: int | None = None,
+    ) -> ICalSubscription:
+        """Return a paused or failing feed to polling and clear ``last_error``."""
+        resp = self._request(
+            "POST", f"{_ICAL_PATH}/{subscription_id}/resume", max_retries=max_retries
+        )
+        return self._build(ICalSubscription, resp)
 
 
 # ---------------------------------------------------------------------------
@@ -258,6 +288,36 @@ class AsyncICalSubscriptions(AsyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> None:
+        """Start an immediate fetch of the feed (returns once it has started).
+
+        Read the subscription a few seconds later for ``last_synced_at`` /
+        ``last_error``. A paused feed raises a 409 error; a second sync of the
+        same feed within a minute raises a 429 error.
+        """
         await self._request(
             "POST", f"{_ICAL_PATH}/{subscription_id}/sync", max_retries=max_retries
         )
+
+    async def pause(
+        self,
+        subscription_id: str,
+        *,
+        max_retries: int | None = None,
+    ) -> ICalSubscription:
+        """Stop polling the feed until it is resumed. Pausing a paused feed changes nothing."""
+        resp = await self._request(
+            "POST", f"{_ICAL_PATH}/{subscription_id}/pause", max_retries=max_retries
+        )
+        return self._build(ICalSubscription, resp)
+
+    async def resume(
+        self,
+        subscription_id: str,
+        *,
+        max_retries: int | None = None,
+    ) -> ICalSubscription:
+        """Return a paused or failing feed to polling and clear ``last_error``."""
+        resp = await self._request(
+            "POST", f"{_ICAL_PATH}/{subscription_id}/resume", max_retries=max_retries
+        )
+        return self._build(ICalSubscription, resp)

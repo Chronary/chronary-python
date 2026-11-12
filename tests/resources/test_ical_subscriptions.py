@@ -101,6 +101,21 @@ class TestSyncICalSubscriptions:
             assert result is None
 
     @respx.mock
+    def test_pause_and_resume(self) -> None:
+        respx.post(f"{BASE}/v1/ical-subscriptions/ics_abc123/pause").mock(
+            return_value=httpx.Response(200, json={**ICAL_SUB_DATA, "status": "paused"})
+        )
+        respx.post(f"{BASE}/v1/ical-subscriptions/ics_abc123/resume").mock(
+            return_value=httpx.Response(200, json=ICAL_SUB_DATA)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            paused = client.ical_subscriptions.pause("ics_abc123")
+            assert isinstance(paused, ICalSubscription)
+            assert paused.status == "paused"
+            resumed = client.ical_subscriptions.resume("ics_abc123")
+            assert resumed.status == "active"
+
+    @respx.mock
     def test_request_id(self) -> None:
         respx.get(f"{BASE}/v1/ical-subscriptions/ics_abc123").mock(
             return_value=httpx.Response(
@@ -180,3 +195,17 @@ class TestAsyncICalSubscriptions:
         async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = await client.ical_subscriptions.sync("ics_abc123")
             assert result is None
+
+    @respx.mock
+    async def test_pause_and_resume(self) -> None:
+        respx.post(f"{BASE}/v1/ical-subscriptions/ics_abc123/pause").mock(
+            return_value=httpx.Response(200, json={**ICAL_SUB_DATA, "status": "paused"})
+        )
+        respx.post(f"{BASE}/v1/ical-subscriptions/ics_abc123/resume").mock(
+            return_value=httpx.Response(200, json=ICAL_SUB_DATA)
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            paused = await client.ical_subscriptions.pause("ics_abc123")
+            assert paused.status == "paused"
+            resumed = await client.ical_subscriptions.resume("ics_abc123")
+            assert resumed.status == "active"

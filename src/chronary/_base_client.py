@@ -21,6 +21,11 @@ _MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 _BACKOFF_BASE = 0.5
 _BACKOFF_MAX = 8.0
 _JITTER_FACTOR = 0.25
+# Upper bound on a server-supplied Retry-After, matching the TypeScript SDK's
+# MAX_RETRY_DELAY (60s). A monthly quota 429 sends Retry-After = seconds to
+# the end of the month and the daily feedback cap sends seconds to UTC
+# midnight; honouring those verbatim would block the caller for hours or weeks.
+_RETRY_AFTER_MAX = 60.0
 _IDEMPOTENCY_HEADER = "Idempotency-Key"
 
 
@@ -42,9 +47,12 @@ def _sleep_time(attempt: int, retry_after: str | None) -> float:
     """Calculate sleep duration with exponential backoff and jitter."""
     if retry_after is not None:
         try:
-            return float(retry_after)
+            seconds = float(retry_after)
         except ValueError:
             pass
+        else:
+            if seconds == seconds:  # not NaN
+                return min(max(seconds, 0.0), _RETRY_AFTER_MAX)
     delay = min(_BACKOFF_BASE * (2**attempt), _BACKOFF_MAX)
     jitter = delay * _JITTER_FACTOR * random.random()  # noqa: S311
     return delay + jitter

@@ -7,7 +7,7 @@ from typing_extensions import NotRequired, Required, TypedDict
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
 
-FeedbackType = Literal["bug", "feature", "friction"]
+FeedbackType = Literal["bug", "feature", "friction", "support"]
 
 
 class FeedbackSubmitParams(TypedDict):
@@ -25,7 +25,7 @@ class FeedbackAcceptedResponse(ChronaryModel):
 _FEEDBACK_PATH = "/v1/feedback"
 
 
-_RATE_LIMIT_DOC = """Submit structured feedback (bug, feature, or friction) to Chronary.
+_RATE_LIMIT_DOC = """Submit structured feedback (bug, feature, friction, or support) to Chronary.
 
 Rate-limited to 25 submissions per day per organization (UTC day).
 Available on all plans, including free. The 26th submission raises a

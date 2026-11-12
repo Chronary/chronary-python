@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime  # noqa: TCH003 -- Pydantic needs this at runtime
-from typing import Any
+from typing import Any, Literal
 
 from typing_extensions import NotRequired, Required, TypedDict
 
@@ -17,6 +17,17 @@ class ScopedApiKey(ChronaryModel):
     agent_id: str
     label: str | None = None
     created_at: datetime
+    last_used_at: datetime | None = None
+    """Approximate: updated at most every 5 minutes. None if never used."""
+    last_used_user_agent: str | None = None
+    created_via: str = "unknown"
+    """signup, console, api, mcp or unknown (created before this was recorded)."""
+    created_by_key_prefix: str | None = None
+    """Prefix of the Organization key that created this key (api and mcp)."""
+    note: str | None = None
+    """Free-text note about the key, set in the console."""
+    expires_at: datetime | None = None
+    """When the key stops working (401 key_expired). None = never expires."""
 
 
 class CreatedScopedApiKey(ScopedApiKey):
@@ -25,9 +36,14 @@ class CreatedScopedApiKey(ScopedApiKey):
     key: str
 
 
+KeyExpiresIn = Literal["30d", "60d", "90d", "180d", "365d"]
+"""How long a new key works, from now. Omit for a key that never expires."""
+
+
 class ScopedApiKeyCreateParams(TypedDict):
     agent_id: Required[str]
     label: NotRequired[str]
+    expires_in: NotRequired[KeyExpiresIn]
 
 
 _KEYS_PATH = "/v1/keys"
@@ -41,11 +57,14 @@ class Keys(SyncAPIResource):
         *,
         agent_id: str,
         label: str | None = None,
+        expires_in: KeyExpiresIn | None = None,
         max_retries: int | None = None,
     ) -> CreatedScopedApiKey:
         body: dict[str, Any] = {"agent_id": agent_id}
         if label is not None:
             body["label"] = label
+        if expires_in is not None:
+            body["expires_in"] = expires_in
         resp = self._request("POST", _KEYS_PATH, json=body, max_retries=max_retries)
         return self._build(CreatedScopedApiKey, resp)
 
@@ -86,11 +105,14 @@ class AsyncKeys(AsyncAPIResource):
         *,
         agent_id: str,
         label: str | None = None,
+        expires_in: KeyExpiresIn | None = None,
         max_retries: int | None = None,
     ) -> CreatedScopedApiKey:
         body: dict[str, Any] = {"agent_id": agent_id}
         if label is not None:
             body["label"] = label
+        if expires_in is not None:
+            body["expires_in"] = expires_in
         resp = await self._request(
             "POST",
             _KEYS_PATH,

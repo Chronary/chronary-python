@@ -16,6 +16,7 @@ class WaitlistJoinParams(TypedDict, total=False):
     email: Required[str]
     name: str
     tos_version: str
+    intent: str
 
 
 # ---------------------------------------------------------------------------
@@ -24,6 +25,9 @@ class WaitlistJoinParams(TypedDict, total=False):
 
 
 class WaitlistedOrg(ChronaryModel):
+    """Deprecated: the waitlist join no longer returns the entry. Kept so
+    existing imports keep working."""
+
     id: str
     name: str
     email: str
@@ -33,14 +37,14 @@ class WaitlistedOrg(ChronaryModel):
 
 
 class WaitlistJoinResponse(ChronaryModel):
-    """Response from ``POST /v1/waitlist`` (#442).
+    """Response from ``POST /v1/waitlist`` (HTTP 202).
 
-    Idempotent — calling :py:meth:`Waitlist.join` twice with the same email
-    returns the existing waitlisted org row instead of erroring. An active
-    (non-waitlisted) account at the same email returns 409 ``email_taken``.
+    The same body whether the email is new, already on the list, or has an
+    active account, so it can't be used to look up other people's accounts.
+    Only a new email is sent the confirmation email.
     """
 
-    data: WaitlistedOrg
+    waitlisted: Literal[True]
     message: str
 
 
@@ -50,9 +54,9 @@ _JOIN_PATH = "/v1/waitlist"
 class Waitlist(SyncAPIResource):
     """``client.waitlist`` — soft-launch waitlist enrollment.
 
-    Used during private preview when the open signup flow is gated. Creates a
-    real organization row flagged as ``is_waitlisted=True``; an admin flips
-    the flag on activation, after which the holder can sign in normally.
+    Used while open sign-up is gated. Adds the email to the waitlist; an
+    account is created only when a founder approves it and the person accepts
+    the emailed invite.
 
     No authentication required — invoke on a ``Chronary`` client constructed
     with no ``api_key``.
@@ -64,6 +68,7 @@ class Waitlist(SyncAPIResource):
         email: str,
         name: str | None = None,
         tos_version: str | None = None,
+        intent: str | None = None,
         max_retries: int | None = None,
     ) -> WaitlistJoinResponse:
         body: dict[str, Any] = {"email": email}
@@ -71,6 +76,8 @@ class Waitlist(SyncAPIResource):
             body["name"] = name
         if tos_version is not None:
             body["tos_version"] = tos_version
+        if intent is not None:
+            body["intent"] = intent
         resp = self._request("POST", _JOIN_PATH, json=body, max_retries=max_retries)
         return self._build(WaitlistJoinResponse, resp)
 
@@ -84,6 +91,7 @@ class AsyncWaitlist(AsyncAPIResource):
         email: str,
         name: str | None = None,
         tos_version: str | None = None,
+        intent: str | None = None,
         max_retries: int | None = None,
     ) -> WaitlistJoinResponse:
         body: dict[str, Any] = {"email": email}
@@ -91,6 +99,8 @@ class AsyncWaitlist(AsyncAPIResource):
             body["name"] = name
         if tos_version is not None:
             body["tos_version"] = tos_version
+        if intent is not None:
+            body["intent"] = intent
         resp = await self._request(
             "POST", _JOIN_PATH, json=body, max_retries=max_retries
         )

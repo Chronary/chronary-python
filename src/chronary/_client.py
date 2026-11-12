@@ -11,6 +11,7 @@ from .resources import (
     AsyncAgentAuth,
     AsyncAgents,
     AsyncAvailability,
+    AsyncBilling,
     AsyncBookingPages,
     AsyncCalendars,
     AsyncEvents,
@@ -26,6 +27,7 @@ from .resources import (
     AsyncWebhooks,
     AuditLog,
     Availability,
+    Billing,
     BookingPages,
     Calendars,
     Events,
@@ -67,6 +69,7 @@ class Chronary(SyncAPIClient):
     _waitlist: Waitlist | None
     _account: Account | None
     _connection_links: ConnectionLinks | None
+    _billing: Billing | None
 
     def __init__(
         self,
@@ -104,6 +107,7 @@ class Chronary(SyncAPIClient):
         self._waitlist = None
         self._account = None
         self._connection_links = None
+        self._billing = None
 
     @property
     def agents(self) -> Agents:
@@ -213,6 +217,12 @@ class Chronary(SyncAPIClient):
             self._account = Account(self)
         return self._account
 
+    @property
+    def billing(self) -> Billing:
+        if self._billing is None:
+            self._billing = Billing(self)
+        return self._billing
+
     def __enter__(self) -> Chronary:
         return self
 
@@ -241,6 +251,7 @@ class AsyncChronary(AsyncAPIClient):
     _waitlist: AsyncWaitlist | None
     _account: AsyncAccount | None
     _connection_links: AsyncConnectionLinks | None
+    _billing: AsyncBilling | None
 
     def __init__(
         self,
@@ -278,6 +289,7 @@ class AsyncChronary(AsyncAPIClient):
         self._waitlist = None
         self._account = None
         self._connection_links = None
+        self._billing = None
 
     @property
     def agents(self) -> AsyncAgents:
@@ -386,6 +398,12 @@ class AsyncChronary(AsyncAPIClient):
         if self._account is None:
             self._account = AsyncAccount(self)
         return self._account
+
+    @property
+    def billing(self) -> AsyncBilling:
+        if self._billing is None:
+            self._billing = AsyncBilling(self)
+        return self._billing
 
     async def __aenter__(self) -> AsyncChronary:
         return self

@@ -648,3 +648,42 @@ class TestAsyncAgentEvents:
             )
             assert pager.data[0].recurring_event_id == "evt_abc123"
             assert "expand=true" in str(route.calls[0].request.url)
+
+
+# ---------------------------------------------------------------------------
+# Org-wide list (#1202)
+# ---------------------------------------------------------------------------
+
+
+class TestOrgEventsListAll:
+    @respx.mock
+    def test_list_all_repeats_calendar_id(self) -> None:
+        route = respx.get(f"{BASE}/v1/events").mock(
+            return_value=httpx.Response(200, json={**LIST_RESPONSE, "next_cursor": None})
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            pager = client.events.list_all(
+                calendar_id=["cal_a", "cal_b"],
+                agent_id="agt_1",
+                q="standup",
+                start_after="2026-04-01T00:00:00Z",
+                start_before="2026-04-15T00:00:00Z",
+            )
+            assert isinstance(pager, SyncPager)
+            assert isinstance(pager.data[0], Event)
+            url = route.calls[0].request.url
+            assert url.params.get_list("calendar_id") == ["cal_a", "cal_b"]
+            assert url.params["agent_id"] == "agt_1"
+            assert url.params["q"] == "standup"
+
+    @respx.mock
+    async def test_async_list_all(self) -> None:
+        route = respx.get(f"{BASE}/v1/events").mock(
+            return_value=httpx.Response(200, json={**LIST_RESPONSE, "next_cursor": None})
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            pager = await client.events.list_all(calendar_id="cal_a", expand=False)
+            assert isinstance(pager, AsyncPager)
+            url = route.calls[0].request.url
+            assert url.params.get_list("calendar_id") == ["cal_a"]
+            assert url.params["expand"] == "false"

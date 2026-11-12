@@ -43,6 +43,28 @@ class BookingPage(ChronaryModel):
     updated_at: datetime
 
 
+class Booking(ChronaryModel):
+    """A booking made through a booking page: the event it created plus the invitee's details."""
+
+    id: str
+    booking_page_id: str
+    calendar_id: str
+    start_time: datetime
+    end_time: datetime
+    status: str
+    invitee_name: str | None = None
+    invitee_email: str | None = None
+    invitee_notes: str | None = None
+    created_at: datetime
+
+
+class BookingList(ChronaryModel):
+    """One page of bookings; pass ``next_cursor`` as ``cursor`` for the next page."""
+
+    data: list[Booking]
+    next_cursor: str | None = None
+
+
 # ---------------------------------------------------------------------------
 # Request param TypedDicts
 # ---------------------------------------------------------------------------
@@ -81,6 +103,12 @@ class BookingPageUpdateParams(TypedDict, total=False):
 class BookingPageListParams(TypedDict, total=False):
     limit: int
     offset: int
+    calendar_id: str
+
+
+class BookingListParams(TypedDict, total=False):
+    limit: int
+    cursor: str
 
 
 def _create_body(
@@ -183,9 +211,10 @@ class BookingPages(SyncAPIResource):
         *,
         limit: int | None = None,
         offset: int | None = None,
+        calendar_id: str | None = None,
         max_retries: int | None = None,
     ) -> SyncPager[BookingPage]:
-        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        params: dict[str, Any] = {"limit": limit, "offset": offset, "calendar_id": calendar_id}
         resp = self._request("GET", _BOOKING_PAGES_PATH, params=params, max_retries=max_retries)
         raw = resp.json()
         list_resp = ListResponse[BookingPage](
@@ -234,6 +263,32 @@ class BookingPages(SyncAPIResource):
     def delete(self, booking_page_id: str, *, max_retries: int | None = None) -> None:
         self._request("DELETE", f"{_BOOKING_PAGES_PATH}/{booking_page_id}", max_retries=max_retries)
 
+    def list_bookings(
+        self,
+        booking_page_id: str,
+        *,
+        limit: int | None = None,
+        cursor: str | None = None,
+        max_retries: int | None = None,
+    ) -> BookingList:
+        """One page of the bookings made through a booking page, newest start first.
+
+        Pass the returned ``next_cursor`` as ``cursor`` for the next page (``None``
+        on the last page). Bookings made before this endpoint was released are
+        not linked to their page.
+        """
+        params: dict[str, Any] = {"limit": limit, "cursor": cursor}
+        path = f"{_BOOKING_PAGES_PATH}/{booking_page_id}/bookings"
+        resp = self._request("GET", path, params=params, max_retries=max_retries)
+        return self._build(BookingList, resp)
+
+    def rotate_slug(self, booking_page_id: str, *, max_retries: int | None = None) -> BookingPage:
+        """Replace the page's public link; the old ``/book/<slug>`` stops working at once."""
+        resp = self._request(
+            "POST", f"{_BOOKING_PAGES_PATH}/{booking_page_id}/rotate-slug", max_retries=max_retries
+        )
+        return self._build(BookingPage, resp)
+
 
 # ---------------------------------------------------------------------------
 # Async resource
@@ -270,9 +325,10 @@ class AsyncBookingPages(AsyncAPIResource):
         *,
         limit: int | None = None,
         offset: int | None = None,
+        calendar_id: str | None = None,
         max_retries: int | None = None,
     ) -> AsyncPager[BookingPage]:
-        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        params: dict[str, Any] = {"limit": limit, "offset": offset, "calendar_id": calendar_id}
         resp = await self._request("GET", _BOOKING_PAGES_PATH, params=params, max_retries=max_retries)
         raw = resp.json()
         list_resp = ListResponse[BookingPage](
@@ -324,3 +380,31 @@ class AsyncBookingPages(AsyncAPIResource):
         await self._request(
             "DELETE", f"{_BOOKING_PAGES_PATH}/{booking_page_id}", max_retries=max_retries
         )
+
+    async def list_bookings(
+        self,
+        booking_page_id: str,
+        *,
+        limit: int | None = None,
+        cursor: str | None = None,
+        max_retries: int | None = None,
+    ) -> BookingList:
+        """One page of the bookings made through a booking page, newest start first.
+
+        Pass the returned ``next_cursor`` as ``cursor`` for the next page (``None``
+        on the last page). Bookings made before this endpoint was released are
+        not linked to their page.
+        """
+        params: dict[str, Any] = {"limit": limit, "cursor": cursor}
+        path = f"{_BOOKING_PAGES_PATH}/{booking_page_id}/bookings"
+        resp = await self._request("GET", path, params=params, max_retries=max_retries)
+        return self._build(BookingList, resp)
+
+    async def rotate_slug(
+        self, booking_page_id: str, *, max_retries: int | None = None
+    ) -> BookingPage:
+        """Replace the page's public link; the old ``/book/<slug>`` stops working at once."""
+        resp = await self._request(
+            "POST", f"{_BOOKING_PAGES_PATH}/{booking_page_id}/rotate-slug", max_retries=max_retries
+        )
+        return self._build(BookingPage, resp)

@@ -58,6 +58,30 @@ class TestSyncAgents:
             assert not pager.has_more
 
     @respx.mock
+    def test_list_search_and_counts(self) -> None:
+        route = respx.get(f"{BASE}/v1/agents").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    **LIST_RESPONSE,
+                    "data": [{**AGENT_DATA, "calendar_count": 2, "scoped_key_count": 1}],
+                    "next_cursor": None,
+                },
+            )
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            pager = client.agents.list(
+                q="sales", sort="name", include_decommissioned=False, include_counts=True
+            )
+            assert pager.data[0].calendar_count == 2
+            assert pager.data[0].scoped_key_count == 1
+        params = route.calls[0].request.url.params
+        assert params["q"] == "sales"
+        assert params["sort"] == "name"
+        assert params["include_decommissioned"] == "false"
+        assert params["include_counts"] == "true"
+
+    @respx.mock
     def test_get(self) -> None:
         respx.get(f"{BASE}/v1/agents/agt_abc123").mock(
             return_value=httpx.Response(200, json=AGENT_DATA)

@@ -70,6 +70,7 @@ class CalendarUpdateParams(TypedDict, total=False):
 
 class CalendarListParams(TypedDict, total=False):
     include: Literal["all"]
+    q: str
     limit: int
     offset: int
 
@@ -165,12 +166,14 @@ class Calendars(SyncAPIResource):
         self,
         *,
         include: Literal["all"] | None = None,
+        q: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
         max_retries: int | None = None,
     ) -> SyncPager[Calendar]:
         params: dict[str, Any] = {
             "include": include,
+            "q": q,
             "limit": limit,
             "offset": offset,
         }
@@ -234,6 +237,22 @@ class Calendars(SyncAPIResource):
         max_retries: int | None = None,
     ) -> None:
         self._request("DELETE", f"{_CALENDARS_PATH}/{calendar_id}", max_retries=max_retries)
+
+    def rotate_ical_token(
+        self,
+        calendar_id: str,
+        *,
+        max_retries: int | None = None,
+    ) -> Calendar:
+        """Regenerate the calendar's iCal subscribe URL.
+
+        The old URL stops working (copies cached elsewhere can be served for up
+        to 5 minutes). Returns the calendar with its new ``ical_url``.
+        Organization keys only.
+        """
+        path = f"{_CALENDARS_PATH}/{calendar_id}/ical-token/rotate"
+        resp = self._request("POST", path, max_retries=max_retries)
+        return self._build(Calendar, resp)
 
     def get_context(
         self,
@@ -320,12 +339,14 @@ class AsyncCalendars(AsyncAPIResource):
         self,
         *,
         include: Literal["all"] | None = None,
+        q: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
         max_retries: int | None = None,
     ) -> AsyncPager[Calendar]:
         params: dict[str, Any] = {
             "include": include,
+            "q": q,
             "limit": limit,
             "offset": offset,
         }
@@ -395,6 +416,22 @@ class AsyncCalendars(AsyncAPIResource):
         await self._request(
             "DELETE", f"{_CALENDARS_PATH}/{calendar_id}", max_retries=max_retries
         )
+
+    async def rotate_ical_token(
+        self,
+        calendar_id: str,
+        *,
+        max_retries: int | None = None,
+    ) -> Calendar:
+        """Regenerate the calendar's iCal subscribe URL.
+
+        The old URL stops working (copies cached elsewhere can be served for up
+        to 5 minutes). Returns the calendar with its new ``ical_url``.
+        Organization keys only.
+        """
+        path = f"{_CALENDARS_PATH}/{calendar_id}/ical-token/rotate"
+        resp = await self._request("POST", path, max_retries=max_retries)
+        return self._build(Calendar, resp)
 
     async def get_context(
         self,

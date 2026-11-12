@@ -36,6 +36,16 @@ class Agent(ChronaryModel):
     metadata: dict[str, Any]
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")
+    # Present only on ``agents.list(include_counts=True)`` rows.
+    calendar_count: int | None = None
+    scoped_key_count: int | None = None
+
+
+def _bool_param(value: bool | None) -> str | None:
+    """Query booleans go over the wire as ``"true"`` / ``"false"``."""
+    if value is None:
+        return None
+    return "true" if value else "false"
 
 
 # ---------------------------------------------------------------------------
@@ -129,6 +139,10 @@ class Agents(SyncAPIResource):
         *,
         type: Literal["ai", "human", "resource"] | None = None,
         status: Literal["active", "paused", "decommissioned"] | None = None,
+        q: str | None = None,
+        sort: Literal["created_at", "name"] | None = None,
+        include_decommissioned: bool | None = None,
+        include_counts: bool | None = None,
         limit: int | None = None,
         offset: int | None = None,
         max_retries: int | None = None,
@@ -136,6 +150,10 @@ class Agents(SyncAPIResource):
         params: dict[str, Any] = {
             "type": type,
             "status": status,
+            "q": q,
+            "sort": sort,
+            "include_decommissioned": _bool_param(include_decommissioned),
+            "include_counts": _bool_param(include_counts),
             "limit": limit,
             "offset": offset,
         }
@@ -263,6 +281,10 @@ class AsyncAgents(AsyncAPIResource):
         *,
         type: Literal["ai", "human", "resource"] | None = None,
         status: Literal["active", "paused", "decommissioned"] | None = None,
+        q: str | None = None,
+        sort: Literal["created_at", "name"] | None = None,
+        include_decommissioned: bool | None = None,
+        include_counts: bool | None = None,
         limit: int | None = None,
         offset: int | None = None,
         max_retries: int | None = None,
@@ -270,6 +292,10 @@ class AsyncAgents(AsyncAPIResource):
         params: dict[str, Any] = {
             "type": type,
             "status": status,
+            "q": q,
+            "sort": sort,
+            "include_decommissioned": _bool_param(include_decommissioned),
+            "include_counts": _bool_param(include_counts),
             "limit": limit,
             "offset": offset,
         }

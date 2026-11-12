@@ -56,6 +56,10 @@ class AgentVerifyResponse(ChronaryModel):
 
     verified: Literal[True]
     message: str
+    sandbox_promotion: Literal["promoted", "capacity_full"] | None = None
+    """``promoted``: the org left the Sandbox tier. ``capacity_full``: the email
+    is verified, but early access is full, so the org keeps Sandbox limits until
+    a spot opens. ``None``: the org was not on Sandbox."""
 
 
 # ---------------------------------------------------------------------------
