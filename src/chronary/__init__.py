@@ -106,6 +106,7 @@ from .resources.usage import (
     CrossCalendarQueriesUsage,
     HoldsUsage,
     ResourceUsage,
+    ScopedKeysUsage,
     UsageHistoryLimits,
     UsageHistoryMetrics,
     UsageHistoryMonth,
@@ -225,6 +226,7 @@ __all__ = [
     "UsageHistoryMetrics",
     "UsageHistoryLimits",
     "ResourceUsage",
+    "ScopedKeysUsage",
     "HoldsUsage",
     "CrossCalendarQueriesUsage",
     # Keys

@@ -15,6 +15,17 @@ class ResourceUsage(ChronaryModel):
     limit: int | None = None
 
 
+class ScopedKeysUsage(ChronaryModel):
+    """Active agent-scoped (``chr_ak_*``) keys.
+
+    ``count`` is a direct count (the name predates the plan cap); ``limit`` is
+    the plan cap, ``None`` for unlimited.
+    """
+
+    count: int
+    limit: int | None = None
+
+
 class HoldsUsage(ChronaryModel):
     """Temporal-hold lifecycle counters.
 
@@ -58,10 +69,15 @@ class UsageResponse(ChronaryModel):
     # Active public booking pages. Plan-capped: Free 1, Pro 25.
     booking_pages: ResourceUsage
     api_calls: ResourceUsage
+    # Webhook deliveries this month.
     webhooks: ResourceUsage
+    # Registered webhook endpoints vs. the plan cap (limit None = unlimited).
+    webhook_endpoints: ResourceUsage
     availability_queries: ResourceUsage
     ical_subscriptions: ResourceUsage
     proposals: ResourceUsage
+    # Active agent-scoped keys vs. the plan cap.
+    scoped_keys: ScopedKeysUsage
     holds: HoldsUsage
     cross_calendar_queries: CrossCalendarQueriesUsage
 

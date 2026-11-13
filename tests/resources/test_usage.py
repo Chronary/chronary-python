@@ -7,6 +7,7 @@ from chronary import (
     AsyncChronary,
     Chronary,
     ResourceUsage,
+    ScopedKeysUsage,
     UsageHistoryResponse,
     UsageResponse,
 )
@@ -66,9 +67,11 @@ USAGE_DATA = {
     "booking_pages": {"used": 1, "limit": 1},
     "api_calls": {"used": 900, "limit": 1000},
     "webhooks": {"used": 50, "limit": 1000},
+    "webhook_endpoints": {"used": 1, "limit": 1},
     "availability_queries": {"used": 30, "limit": 100},
     "ical_subscriptions": {"used": 0, "limit": 0},
     "proposals": {"used": 0, "limit": 0},
+    "scoped_keys": {"count": 0, "limit": 0},
     "holds": {"created": 24, "confirmed": 18, "expired": 4, "active": 2},
     "cross_calendar_queries": {"used": 11},
 }
@@ -110,6 +113,12 @@ class TestSyncUsage:
             assert usage.resets_at == "2026-05-01T00:00:00.000Z"
             assert usage.generated_at == "2026-04-25T12:04:07.000Z"
             assert usage.cross_calendar_queries.used == 11
+            assert isinstance(usage.webhook_endpoints, ResourceUsage)
+            assert usage.webhook_endpoints.used == 1
+            assert usage.webhook_endpoints.limit == 1
+            assert isinstance(usage.scoped_keys, ScopedKeysUsage)
+            assert usage.scoped_keys.count == 0
+            assert usage.scoped_keys.limit == 0
 
     @respx.mock
     def test_request_id(self) -> None:
@@ -128,6 +137,8 @@ class TestSyncUsage:
             **USAGE_DATA,
             "plan": "scale",
             "agents": {"used": 100, "limit": None},
+            "webhook_endpoints": {"used": 12, "limit": None},
+            "scoped_keys": {"count": 40, "limit": None},
         }
         respx.get(f"{BASE}/v1/usage").mock(
             return_value=httpx.Response(200, json=data)
@@ -135,6 +146,9 @@ class TestSyncUsage:
         with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             usage = client.usage.get()
             assert usage.agents.limit is None
+            assert usage.webhook_endpoints.limit is None
+            assert usage.scoped_keys.count == 40
+            assert usage.scoped_keys.limit is None
 
     @respx.mock
     def test_history(self) -> None:
@@ -180,6 +194,8 @@ class TestAsyncUsage:
             assert usage.agents.used == 1
             assert usage.holds.created == 24
             assert usage.cross_calendar_queries.used == 11
+            assert usage.webhook_endpoints.used == 1
+            assert usage.scoped_keys.count == 0
 
     @respx.mock
     async def test_request_id(self) -> None:
