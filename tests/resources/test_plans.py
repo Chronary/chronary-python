@@ -16,18 +16,18 @@ CATALOG_FIXTURE = {
             "price": 0,
             "currency": "usd",
             "limits": {
-                "agents": 5,
-                "calendars": 10,
-                "events": 5000,
-                "api_calls": 50000,
-                "webhook_deliveries": 10000,
-                "availability_queries": 10000,
-                "ical_subscriptions": 3,
-                "proposals": 500,
-                "webhook_endpoints": 3,
+                "agents": 1,
+                "calendars": 1,
+                "events": 100,
+                "api_calls": 1000,
+                "webhook_deliveries": 1000,
+                "availability_queries": 100,
+                "ical_subscriptions": 0,
+                "proposals": 0,
+                "webhook_endpoints": 1,
                 "scoped_keys": 0,
             },
-            "display_features": ["5 agents"],
+            "display_features": ["1 agent"],
             "recommended": False,
         },
         {
@@ -81,7 +81,7 @@ class TestSyncPlans:
         assert isinstance(result.plans[0], Plan)
         # Guards the endpoint/key caps previously absent from PlanLimits.
         assert result.plans[0].limits is not None
-        assert result.plans[0].limits.webhook_endpoints == 3
+        assert result.plans[0].limits.webhook_endpoints == 1
         assert result.plans[0].limits.scoped_keys == 0
         assert route.called
 

@@ -2,8 +2,9 @@
 
 All notable changes to `chronary` (Python SDK) will be documented in this file starting with the soft-launch release.
 
-## Unreleased
+## 0.9.0 — Unreleased
 
+- A 429 `quota_exceeded` (a monthly plan limit) is no longer retried: the client raises `QuotaExceededError` at once instead of sleeping and asking again. A rate-limit 429 still retries, honouring `Retry-After` up to 60 seconds (#1936).
 - Cap a server-supplied `Retry-After` at 60 seconds, like the TypeScript SDK. A monthly quota 429 sends the seconds left in the month, so a client that hit its cap used to sleep until the month ended instead of raising `QuotaExceededError`.
 - Add the `developer` plan: `PlanId` accepts it (and any later plan id as a plain string), `Plan.annual_price`, `BillingSummary.pending_plan` / `pending_plan_interval` / `pending_plan_at`, `BillingUpgradeOption.via`. API status errors expose `upgrade_plan`. Additive (#1911).
 

@@ -78,7 +78,7 @@ class EventCreateParams(TypedDict):
     # pass [] for no reminders.
     reminders: NotRequired[list[int]]
     # RFC 5545 RRULE subset (no "RRULE:" prefix), e.g. "FREQ=WEEKLY;BYDAY=MO,WE;COUNT=12".
-    # Not allowed with status='hold'. Free plan: 5 recurring events, and the series
+    # Not allowed with status='hold'. Free plan: 1 recurring series, and the series
     # must end within 90 days (bounded COUNT/UNTIL required); Pro plan: 250 recurring
     # events, unbounded rules allowed. 400 invalid rule; 403 plan_required; 429 quota.
     recurrence_rule: NotRequired[str]
@@ -101,7 +101,7 @@ class EventUpdateParams(TypedDict, total=False):
     reminders: list[int]
     # Full-series edit: replaces the recurrence rule on the whole series.
     # Explicit None clears the rule, converting the series back to a one-off
-    # event. Same plan limits as create (Free: 5 + bounded within 90 days;
+    # event. Same plan limits as create (Free: 1 + bounded within 90 days;
     # Pro: 250 + unbounded allowed).
     recurrence_rule: str | None
 
@@ -154,7 +154,7 @@ class Events(SyncAPIResource):
         ``recurrence_rule`` (RFC 5545 RRULE subset, no "RRULE:" prefix, e.g.
         ``"FREQ=WEEKLY;BYDAY=MO,WE;COUNT=12"``) makes the event a recurring
         series master. Not allowed with ``status="hold"``. Plan limits: Free —
-        5 recurring events and the series must end within 90 days (bounded
+        1 recurring series and the series must end within 90 days (bounded
         COUNT/UNTIL required); Pro — 250 recurring events, unbounded allowed.
         Raises 400 for an invalid rule, 403 (plan_required), or 429 (quota).
         """
@@ -491,7 +491,7 @@ class AsyncEvents(AsyncAPIResource):
         ``recurrence_rule`` (RFC 5545 RRULE subset, no "RRULE:" prefix, e.g.
         ``"FREQ=WEEKLY;BYDAY=MO,WE;COUNT=12"``) makes the event a recurring
         series master. Not allowed with ``status="hold"``. Plan limits: Free —
-        5 recurring events and the series must end within 90 days (bounded
+        1 recurring series and the series must end within 90 days (bounded
         COUNT/UNTIL required); Pro — 250 recurring events, unbounded allowed.
         Raises 400 for an invalid rule, 403 (plan_required), or 429 (quota).
         """

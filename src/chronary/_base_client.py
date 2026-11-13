@@ -43,6 +43,19 @@ def _default_headers(api_key: str | None) -> dict[str, str]:
     return headers
 
 
+def _is_quota_exceeded(response: httpx.Response) -> bool:
+    """True for a 429 whose body says ``quota_exceeded`` (a monthly plan limit).
+
+    Retrying cannot succeed until the limit resets or the plan changes, so the
+    request loops raise ``QuotaExceededError`` at once instead (#1936).
+    """
+    if response.status_code != 429:
+        return False
+    body = _safe_json(response)
+    error_obj = body.get("error") if isinstance(body, dict) else None
+    return isinstance(error_obj, dict) and error_obj.get("type") == "quota_exceeded"
+
+
 def _sleep_time(attempt: int, retry_after: str | None) -> float:
     """Calculate sleep duration with exponential backoff and jitter."""
     if retry_after is not None:
@@ -169,7 +182,11 @@ class SyncAPIClient:
                 time.sleep(_sleep_time(attempt, None))
                 continue
 
-            if response.status_code in _RETRYABLE_STATUS_CODES and attempt < retries:
+            if (
+                response.status_code in _RETRYABLE_STATUS_CODES
+                and attempt < retries
+                and not _is_quota_exceeded(response)
+            ):
                 retry_after = response.headers.get("Retry-After")
                 time.sleep(_sleep_time(attempt, retry_after))
                 continue
@@ -268,7 +285,11 @@ class AsyncAPIClient:
                 await _async_sleep(_sleep_time(attempt, None))
                 continue
 
-            if response.status_code in _RETRYABLE_STATUS_CODES and attempt < retries:
+            if (
+                response.status_code in _RETRYABLE_STATUS_CODES
+                and attempt < retries
+                and not _is_quota_exceeded(response)
+            ):
                 retry_after = response.headers.get("Retry-After")
                 await _async_sleep(_sleep_time(attempt, retry_after))
                 continue

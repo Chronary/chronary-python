@@ -38,7 +38,7 @@ REQUEST = {
 }
 
 SUMMARY = {
-    "plan": "free-agent",
+    "plan": "free",
     "plan_source": None,
     "plan_expires_at": None,
     "status": None,
@@ -69,7 +69,7 @@ def test_sync_billing_get() -> None:
     with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
         summary = client.billing.get()
     assert isinstance(summary, BillingSummary)
-    assert summary.plan == "free-agent"
+    assert summary.plan == "free"
     assert summary.upgrade_options[0].amount == 2900
     assert summary.pending_upgrade_request is not None
     assert summary.pending_upgrade_request.id == "upr_abc123"
@@ -161,7 +161,7 @@ async def test_async_billing_and_upgrade_requests() -> None:
         return_value=httpx.Response(200, json={**REQUEST, "status": "canceled"})
     )
     async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
-        assert (await client.billing.get()).plan == "free-agent"
+        assert (await client.billing.get()).plan == "free"
         req = await client.billing.upgrade_requests.create(reason="r", idempotency_key="k1")
         assert req.id == "upr_abc123"
         assert (await client.billing.upgrade_requests.get("upr_abc123")).status == "pending"

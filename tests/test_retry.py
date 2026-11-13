@@ -8,7 +8,7 @@ import respx
 
 from chronary import AsyncChronary, Chronary, InternalServerError
 from chronary._base_client import _sleep_time
-from chronary._exceptions import APIConnectionError, APITimeoutError
+from chronary._exceptions import APIConnectionError, APITimeoutError, QuotaExceededError
 
 BASE = "https://api.chronary.ai"
 
@@ -208,6 +208,82 @@ class TestAsyncRetry:
                 retry_req = route.calls[1].request
                 assert "Idempotency-Key" in first_req.headers
                 assert retry_req.headers["Idempotency-Key"] == first_req.headers["Idempotency-Key"]
+
+
+QUOTA_BODY = {
+    "error": {
+        "type": "quota_exceeded",
+        "message": "Monthly API call limit of 1,000 reached.",
+        "metric": "api_calls",
+    }
+}
+
+
+class TestQuotaExceededIsNotRetried:
+    """#1936: a monthly quota 429 raises at once; a rate-limit 429 still retries."""
+
+    @respx.mock
+    def test_quota_exceeded_raises_without_retry_or_sleep(self) -> None:
+        route = respx.get(f"{BASE}/v1/agents/agt_abc123").mock(
+            return_value=httpx.Response(429, json=QUOTA_BODY, headers={"Retry-After": "1700000"})
+        )
+        with (
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=2) as client,
+            patch("chronary._base_client.time.sleep") as sleep,
+            pytest.raises(QuotaExceededError),
+        ):
+            client.agents.get("agt_abc123")
+        assert route.call_count == 1
+        sleep.assert_not_called()
+
+    @respx.mock
+    def test_rate_limit_429_still_retries_with_retry_after(self) -> None:
+        error_body = {"error": {"type": "rate_limit_error", "message": "Too many requests"}}
+        route = respx.get(f"{BASE}/v1/agents/agt_abc123").mock(
+            side_effect=[
+                httpx.Response(429, json=error_body, headers={"Retry-After": "2"}),
+                httpx.Response(200, json=AGENT_DATA),
+            ]
+        )
+        with (
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=2) as client,
+            patch("chronary._base_client.time.sleep") as sleep,
+        ):
+            agent = client.agents.get("agt_abc123")
+        assert agent.id == "agt_abc123"
+        assert route.call_count == 2
+        sleep.assert_called_once_with(2.0)
+
+    @respx.mock
+    def test_long_rate_limit_retry_after_is_clamped(self) -> None:
+        error_body = {"error": {"type": "rate_limit_error", "message": "Too many requests"}}
+        respx.get(f"{BASE}/v1/agents/agt_abc123").mock(
+            side_effect=[
+                httpx.Response(429, json=error_body, headers={"Retry-After": "1700000"}),
+                httpx.Response(200, json=AGENT_DATA),
+            ]
+        )
+        with (
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=1) as client,
+            patch("chronary._base_client.time.sleep") as sleep,
+        ):
+            client.agents.get("agt_abc123")
+        sleep.assert_called_once_with(60.0)
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_quota_exceeded_raises_without_retry_or_sleep(self) -> None:
+        route = respx.get(f"{BASE}/v1/agents/agt_abc123").mock(
+            return_value=httpx.Response(429, json=QUOTA_BODY, headers={"Retry-After": "1700000"})
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE, max_retries=2) as client:
+            with (
+                patch("chronary._base_client._async_sleep") as sleep,
+                pytest.raises(QuotaExceededError),
+            ):
+                await client.agents.get("agt_abc123")
+        assert route.call_count == 1
+        sleep.assert_not_called()
 
 
 class TestSleepTime:

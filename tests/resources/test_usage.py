@@ -29,10 +29,10 @@ HISTORY_DATA = {
     "plan": "free",
     "months": 2,
     "limits": {
-        "api_calls": 50000,
-        "events": 2500,
-        "webhook_deliveries": 5000,
-        "availability_queries": 10000,
+        "api_calls": 1000,
+        "events": 100,
+        "webhook_deliveries": 1000,
+        "availability_queries": 100,
         "proposals": None,
     },
     "data": [
@@ -59,16 +59,16 @@ USAGE_DATA = {
     "resets_at": "2026-05-01T00:00:00.000Z",
     "generated_at": "2026-04-25T12:04:07.000Z",
     "plan": "free",
-    "agents": {"used": 3, "limit": 5},
-    "calendars": {"used": 5, "limit": 10},
-    "events": {"used": 150, "limit": 5000},
-    "recurring_events": {"used": 2, "limit": 5},
+    "agents": {"used": 1, "limit": 1},
+    "calendars": {"used": 1, "limit": 1},
+    "events": {"used": 50, "limit": 100},
+    "recurring_events": {"used": 1, "limit": 1},
     "booking_pages": {"used": 1, "limit": 1},
-    "api_calls": {"used": 1200, "limit": 50000},
-    "webhooks": {"used": 50, "limit": 10000},
-    "availability_queries": {"used": 30, "limit": 10000},
-    "ical_subscriptions": {"used": 1, "limit": 3},
-    "proposals": {"used": 18, "limit": 500},
+    "api_calls": {"used": 900, "limit": 1000},
+    "webhooks": {"used": 50, "limit": 1000},
+    "availability_queries": {"used": 30, "limit": 100},
+    "ical_subscriptions": {"used": 0, "limit": 0},
+    "proposals": {"used": 0, "limit": 0},
     "holds": {"created": 24, "confirmed": 18, "expired": 4, "active": 2},
     "cross_calendar_queries": {"used": 11},
 }
@@ -91,18 +91,18 @@ class TestSyncUsage:
             assert usage.plan == "free"
             assert usage.period_start == "2026-04-01T00:00:00Z"
             assert isinstance(usage.agents, ResourceUsage)
-            assert usage.agents.used == 3
-            assert usage.agents.limit == 5
-            assert usage.events.used == 150
+            assert usage.agents.used == 1
+            assert usage.agents.limit == 1
+            assert usage.events.used == 50
             assert isinstance(usage.recurring_events, ResourceUsage)
-            assert usage.recurring_events.used == 2
-            assert usage.recurring_events.limit == 5
+            assert usage.recurring_events.used == 1
+            assert usage.recurring_events.limit == 1
             assert isinstance(usage.booking_pages, ResourceUsage)
             assert usage.booking_pages.used == 1
             assert usage.booking_pages.limit == 1
-            assert usage.ical_subscriptions.used == 1
-            assert usage.proposals.used == 18
-            assert usage.proposals.limit == 500
+            assert usage.ical_subscriptions.used == 0
+            assert usage.proposals.used == 0
+            assert usage.proposals.limit == 0
             assert usage.holds.created == 24
             assert usage.holds.confirmed == 18
             assert usage.holds.expired == 4
@@ -146,7 +146,7 @@ class TestSyncUsage:
             assert isinstance(history, UsageHistoryResponse)
             assert route.calls[0].request.url.params["months"] == "2"
             assert history.plan == "free"
-            assert history.limits.api_calls == 50000
+            assert history.limits.api_calls == 1000
             assert history.limits.proposals is None
             assert [m.period for m in history.data] == ["2026-09", "2026-10"]
             assert history.data[-1].is_current is True
@@ -177,7 +177,7 @@ class TestAsyncUsage:
             usage = await client.usage.get()
             assert isinstance(usage, UsageResponse)
             assert usage.plan == "free"
-            assert usage.agents.used == 3
+            assert usage.agents.used == 1
             assert usage.holds.created == 24
             assert usage.cross_calendar_queries.used == 11
 
