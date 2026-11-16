@@ -2,7 +2,12 @@
 
 All notable changes to `chronary` (Python SDK) will be documented in this file starting with the soft-launch release.
 
-## 0.10.0 — Unreleased
+## 0.11.0 — 2026-11-16
+
+- **Time-zone-aware recurrence (#2276).** `events.create` takes `timezone` (IANA, e.g. `"America/Los_Angeles"`), and `events.update` / `events.update_by_id` take it too (explicit `None` returns the series to UTC). A recurring series then repeats on local wall time: a weekly 16:00 stays 16:00 local across daylight-saving changes, and BYDAY, the `start_time` match and a date-only UNTIL are read in that zone. `timezone`, `recurrence_rule` and `start_time` sent together are validated once, on the merged result. `Event` gains `timezone`, and expanded instances (`expand=True`) gain `start_local`, `utc_offset` and `dst_adjusted` (`"gap"` when a local time skipped by a DST gap was moved forward).
+- **Series edits keep cancelled occurrences (#2277).** An update that changes `start_time`, `recurrence_rule` or `timezone` on a recurring series carries each cancelled occurrence (exdate) to the new occurrence on the same local date instead of clearing it. Any with no occurrence on that date are removed and returned in the new `Event.dropped_exdates`; re-cancel with `delete(occurrence_start=...)` if needed. Clearing the rule still clears them.
+
+## 0.10.0
 
 - `UsageResponse` gains the two fields the API already returned: `webhook_endpoints` (`ResourceUsage`: registered webhook endpoints vs. the plan cap) and `scoped_keys` (new `ScopedKeysUsage` with `count` and `limit`: active agent-scoped keys). A new test fails when the API's `Usage` response gains a field the model lacks (#1995).
 

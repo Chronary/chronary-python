@@ -50,12 +50,29 @@ class Event(ChronaryModel):
     recurrence_rule: str | None = Field(default=None, alias="recurrenceRule")
     # ISO 8601 starts of individually cancelled occurrences (EXDATE).
     recurrence_exdates: list[str] = Field(default_factory=list, alias="recurrenceExdates")
+    # IANA time zone the series repeats in (e.g. "America/Los_Angeles"): a weekly
+    # 16:00 stays 16:00 local across DST changes. None = UTC.
+    timezone: str | None = None
     # Present only on expanded instances (expand=True): the id of the recurring
     # series master this instance belongs to.
     recurring_event_id: str | None = Field(default=None, alias="recurringEventId")
     # Present only on expanded instances: the occurrence start this instance
     # was generated for.
     original_start_time: datetime | None = Field(default=None, alias="originalStartTime")
+    # Present only on expanded instances: the start as local wall time in the
+    # series time zone (UTC when it has none), without offset, e.g.
+    # "2026-03-30T09:00:00".
+    start_local: str | None = Field(default=None, alias="startLocal")
+    # Present only on expanded instances: the UTC offset at start_local, e.g. "-08:00".
+    utc_offset: str | None = Field(default=None, alias="utcOffset")
+    # Present only on expanded instances: "gap" when the local start did not exist
+    # (DST spring-forward) and was moved forward by the gap; otherwise None.
+    dst_adjusted: Literal["gap"] | None = Field(default=None, alias="dstAdjusted")
+    # Present only on update responses that moved a recurring series (start_time,
+    # recurrence_rule or timezone): cancelled occurrences whose local date has no
+    # occurrence in the new series. They were removed; re-cancel the right
+    # occurrence with delete(occurrence_start=...) if needed. None otherwise.
+    dropped_exdates: list[str] | None = Field(default=None, alias="droppedExdates")
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")
 
@@ -82,6 +99,8 @@ class EventCreateParams(TypedDict):
     # must end within 90 days (bounded COUNT/UNTIL required); Pro plan: 250 recurring
     # events, unbounded rules allowed. 400 invalid rule; 403 plan_required; 429 quota.
     recurrence_rule: NotRequired[str]
+    # IANA time zone the series repeats in, e.g. "America/Los_Angeles". Omit for UTC.
+    timezone: NotRequired[str]
     # Hold-specific fields (required/valid only when status='hold').
     hold_expires_at: NotRequired[str]
     hold_priority: NotRequired[int]
@@ -104,6 +123,8 @@ class EventUpdateParams(TypedDict, total=False):
     # event. Same plan limits as create (Free: 1 + bounded within 90 days;
     # Pro: 250 + unbounded allowed).
     recurrence_rule: str | None
+    # IANA time zone the series repeats in; None returns the series to UTC.
+    timezone: str | None
 
 
 class EventListParams(TypedDict, total=False):
@@ -145,6 +166,7 @@ class Events(SyncAPIResource):
         metadata: dict[str, Any] | None = None,
         reminders: list[int] | None = None,
         recurrence_rule: str | None = None,
+        timezone: str | None = None,
         hold_expires_at: str | None = None,
         hold_priority: int | None = None,
         max_retries: int | None = None,
@@ -157,6 +179,11 @@ class Events(SyncAPIResource):
         1 recurring series and the series must end within 90 days (bounded
         COUNT/UNTIL required); Pro — 250 recurring events, unbounded allowed.
         Raises 400 for an invalid rule, 403 (plan_required), or 429 (quota).
+
+        ``timezone`` (IANA, e.g. ``"America/Los_Angeles"``) makes the series
+        repeat on local wall time: a weekly 16:00 stays 16:00 local across
+        daylight-saving changes, and BYDAY, the ``start_time`` match and a
+        date-only UNTIL are read in that zone. Omit for UTC.
         """
         path = _EVENTS_PATH.format(calendar_id=calendar_id)
         body: dict[str, Any] = {
@@ -176,6 +203,8 @@ class Events(SyncAPIResource):
             body["reminders"] = reminders
         if recurrence_rule is not None:
             body["recurrence_rule"] = recurrence_rule
+        if timezone is not None:
+            body["timezone"] = timezone
         if hold_expires_at is not None:
             body["hold_expires_at"] = hold_expires_at
         if hold_priority is not None:
@@ -308,6 +337,7 @@ class Events(SyncAPIResource):
         metadata: dict[str, Any] | None = None,
         reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
         recurrence_rule: str | None = _UNSET,  # type: ignore[assignment]
+        timezone: str | None = _UNSET,  # type: ignore[assignment]
         max_retries: int | None = None,
     ) -> Event:
         """Update an event.
@@ -316,6 +346,16 @@ class Events(SyncAPIResource):
         whole series. Pass ``None`` explicitly to clear the rule (converting
         the series back to a one-off event); omit it to leave the rule
         unchanged. Same plan limits as :meth:`create`.
+
+        ``timezone`` sets or changes the IANA zone the series repeats in;
+        explicit ``None`` returns it to UTC. ``timezone``, ``recurrence_rule``
+        and ``start_time`` sent together are validated once, on the merged
+        result, so a UTC series can move to local time in one call.
+
+        A change to ``start_time``, ``recurrence_rule`` or ``timezone`` keeps
+        each cancelled occurrence on its local date; any that no longer match
+        an occurrence are removed and listed in ``Event.dropped_exdates``.
+        Clearing the rule still clears them.
         """
         path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
         body: dict[str, Any] = {}
@@ -337,6 +377,8 @@ class Events(SyncAPIResource):
             body["reminders"] = reminders
         if recurrence_rule is not _UNSET:
             body["recurrence_rule"] = recurrence_rule
+        if timezone is not _UNSET:
+            body["timezone"] = timezone
         resp = self._request("PATCH", path, json=body, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -388,12 +430,14 @@ class Events(SyncAPIResource):
         metadata: dict[str, Any] | None = None,
         reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
         recurrence_rule: str | None = _UNSET,  # type: ignore[assignment]
+        timezone: str | None = _UNSET,  # type: ignore[assignment]
         max_retries: int | None = None,
     ) -> Event:
         """Update an event by ID alone — the calendar is resolved internally.
 
         ``recurrence_rule`` is a full-series edit; explicit ``None`` clears the
-        rule — see :meth:`update`.
+        rule. ``timezone`` takes explicit ``None`` to return the series to UTC
+        — see :meth:`update`.
         """
         path = _EVENT_BY_ID_PATH.format(event_id=event_id)
         body: dict[str, Any] = {}
@@ -415,6 +459,8 @@ class Events(SyncAPIResource):
             body["reminders"] = reminders
         if recurrence_rule is not _UNSET:
             body["recurrence_rule"] = recurrence_rule
+        if timezone is not _UNSET:
+            body["timezone"] = timezone
         resp = self._request("PATCH", path, json=body, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -482,6 +528,7 @@ class AsyncEvents(AsyncAPIResource):
         metadata: dict[str, Any] | None = None,
         reminders: list[int] | None = None,
         recurrence_rule: str | None = None,
+        timezone: str | None = None,
         hold_expires_at: str | None = None,
         hold_priority: int | None = None,
         max_retries: int | None = None,
@@ -494,6 +541,11 @@ class AsyncEvents(AsyncAPIResource):
         1 recurring series and the series must end within 90 days (bounded
         COUNT/UNTIL required); Pro — 250 recurring events, unbounded allowed.
         Raises 400 for an invalid rule, 403 (plan_required), or 429 (quota).
+
+        ``timezone`` (IANA, e.g. ``"America/Los_Angeles"``) makes the series
+        repeat on local wall time: a weekly 16:00 stays 16:00 local across
+        daylight-saving changes, and BYDAY, the ``start_time`` match and a
+        date-only UNTIL are read in that zone. Omit for UTC.
         """
         path = _EVENTS_PATH.format(calendar_id=calendar_id)
         body: dict[str, Any] = {
@@ -513,6 +565,8 @@ class AsyncEvents(AsyncAPIResource):
             body["reminders"] = reminders
         if recurrence_rule is not None:
             body["recurrence_rule"] = recurrence_rule
+        if timezone is not None:
+            body["timezone"] = timezone
         if hold_expires_at is not None:
             body["hold_expires_at"] = hold_expires_at
         if hold_priority is not None:
@@ -645,6 +699,7 @@ class AsyncEvents(AsyncAPIResource):
         metadata: dict[str, Any] | None = None,
         reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
         recurrence_rule: str | None = _UNSET,  # type: ignore[assignment]
+        timezone: str | None = _UNSET,  # type: ignore[assignment]
         max_retries: int | None = None,
     ) -> Event:
         """Update an event.
@@ -653,6 +708,16 @@ class AsyncEvents(AsyncAPIResource):
         whole series. Pass ``None`` explicitly to clear the rule (converting
         the series back to a one-off event); omit it to leave the rule
         unchanged. Same plan limits as :meth:`create`.
+
+        ``timezone`` sets or changes the IANA zone the series repeats in;
+        explicit ``None`` returns it to UTC. ``timezone``, ``recurrence_rule``
+        and ``start_time`` sent together are validated once, on the merged
+        result, so a UTC series can move to local time in one call.
+
+        A change to ``start_time``, ``recurrence_rule`` or ``timezone`` keeps
+        each cancelled occurrence on its local date; any that no longer match
+        an occurrence are removed and listed in ``Event.dropped_exdates``.
+        Clearing the rule still clears them.
         """
         path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
         body: dict[str, Any] = {}
@@ -674,6 +739,8 @@ class AsyncEvents(AsyncAPIResource):
             body["reminders"] = reminders
         if recurrence_rule is not _UNSET:
             body["recurrence_rule"] = recurrence_rule
+        if timezone is not _UNSET:
+            body["timezone"] = timezone
         resp = await self._request("PATCH", path, json=body, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -725,12 +792,14 @@ class AsyncEvents(AsyncAPIResource):
         metadata: dict[str, Any] | None = None,
         reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
         recurrence_rule: str | None = _UNSET,  # type: ignore[assignment]
+        timezone: str | None = _UNSET,  # type: ignore[assignment]
         max_retries: int | None = None,
     ) -> Event:
         """Update an event by ID alone — the calendar is resolved internally.
 
         ``recurrence_rule`` is a full-series edit; explicit ``None`` clears the
-        rule — see :meth:`update`.
+        rule. ``timezone`` takes explicit ``None`` to return the series to UTC
+        — see :meth:`update`.
         """
         path = _EVENT_BY_ID_PATH.format(event_id=event_id)
         body: dict[str, Any] = {}
@@ -752,6 +821,8 @@ class AsyncEvents(AsyncAPIResource):
             body["reminders"] = reminders
         if recurrence_rule is not _UNSET:
             body["recurrence_rule"] = recurrence_rule
+        if timezone is not _UNSET:
+            body["timezone"] = timezone
         resp = await self._request("PATCH", path, json=body, max_retries=max_retries)
         return self._build(Event, resp)
 

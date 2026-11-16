@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import httpx
 import respx
 
@@ -687,3 +689,205 @@ class TestOrgEventsListAll:
             url = route.calls[0].request.url
             assert url.params.get_list("calendar_id") == ["cal_a"]
             assert url.params["expand"] == "false"
+
+
+# ---------------------------------------------------------------------------
+# Time zones and kept exdates (#2276, #2277)
+# ---------------------------------------------------------------------------
+
+TZ_EVENT_DATA = {
+    **RECURRING_EVENT_DATA,
+    "recurrenceRule": "FREQ=WEEKLY;BYDAY=TU",
+    "timezone": "America/Los_Angeles",
+}
+
+TZ_INSTANCE_DATA = {
+    **TZ_EVENT_DATA,
+    "recurringEventId": "evt_abc123",
+    "originalStartTime": "2026-03-10T16:00:00Z",
+    "startTime": "2026-03-10T16:00:00Z",
+    "endTime": "2026-03-10T16:30:00Z",
+    "startLocal": "2026-03-10T09:00:00",
+    "utcOffset": "-07:00",
+    "dstAdjusted": None,
+}
+
+CAL_EVENT_PATH = f"{BASE}/v1/calendars/cal_abc123/events/evt_abc123"
+BY_ID_PATH = f"{BASE}/v1/events/evt_abc123"
+
+
+def _sent(route: respx.Route) -> dict[str, object]:
+    return json.loads(route.calls[0].request.content)
+
+
+class TestEventTimezoneModel:
+    def test_one_off_event_defaults(self) -> None:
+        evt = Event.model_validate(EVENT_DATA)
+        assert evt.timezone is None
+        assert evt.start_local is None
+        assert evt.utc_offset is None
+        assert evt.dst_adjusted is None
+        assert evt.dropped_exdates is None
+
+    def test_series_with_timezone(self) -> None:
+        evt = Event.model_validate(TZ_EVENT_DATA)
+        assert evt.timezone == "America/Los_Angeles"
+
+    def test_expanded_instance_local_fields(self) -> None:
+        evt = Event.model_validate(TZ_INSTANCE_DATA)
+        assert evt.start_local == "2026-03-10T09:00:00"
+        assert evt.utc_offset == "-07:00"
+        assert evt.dst_adjusted is None
+
+    def test_expanded_instance_dst_gap(self) -> None:
+        evt = Event.model_validate(
+            {**TZ_INSTANCE_DATA, "startLocal": "2026-03-08T03:30:00", "dstAdjusted": "gap"}
+        )
+        assert evt.dst_adjusted == "gap"
+
+    def test_dropped_exdates(self) -> None:
+        evt = Event.model_validate({**TZ_EVENT_DATA, "droppedExdates": ["2026-03-17T16:00:00Z"]})
+        assert evt.dropped_exdates == ["2026-03-17T16:00:00Z"]
+
+
+class TestSyncEventsTimezone:
+    @respx.mock
+    def test_create_with_timezone(self) -> None:
+        route = respx.post(f"{BASE}/v1/calendars/cal_abc123/events").mock(
+            return_value=httpx.Response(201, json=TZ_EVENT_DATA)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            evt = client.events.create(
+                "cal_abc123",
+                title="Strategy Sync",
+                start_time="2026-03-10T16:00:00Z",
+                end_time="2026-03-10T16:30:00Z",
+                recurrence_rule="FREQ=WEEKLY;BYDAY=TU",
+                timezone="America/Los_Angeles",
+            )
+            assert evt.timezone == "America/Los_Angeles"
+            assert _sent(route)["timezone"] == "America/Los_Angeles"
+
+    @respx.mock
+    def test_create_omits_timezone(self) -> None:
+        route = respx.post(f"{BASE}/v1/calendars/cal_abc123/events").mock(
+            return_value=httpx.Response(201, json=EVENT_DATA)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            client.events.create(
+                "cal_abc123",
+                title="Strategy Sync",
+                start_time="2026-03-28T14:00:00Z",
+                end_time="2026-03-28T14:30:00Z",
+            )
+            assert "timezone" not in _sent(route)
+
+    @respx.mock
+    def test_migration_patch_returns_dropped_exdates(self) -> None:
+        updated = {**TZ_EVENT_DATA, "droppedExdates": ["2026-03-18T16:00:00.000Z"]}
+        route = respx.patch(CAL_EVENT_PATH).mock(return_value=httpx.Response(200, json=updated))
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            evt = client.events.update(
+                "cal_abc123",
+                "evt_abc123",
+                timezone="America/Los_Angeles",
+                recurrence_rule="FREQ=WEEKLY;BYDAY=TU",
+            )
+            assert evt.dropped_exdates == ["2026-03-18T16:00:00.000Z"]
+            assert _sent(route) == {
+                "timezone": "America/Los_Angeles",
+                "recurrence_rule": "FREQ=WEEKLY;BYDAY=TU",
+            }
+
+    @respx.mock
+    def test_update_timezone_to_none(self) -> None:
+        updated = {**RECURRING_EVENT_DATA, "timezone": None}
+        route = respx.patch(CAL_EVENT_PATH).mock(return_value=httpx.Response(200, json=updated))
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            evt = client.events.update("cal_abc123", "evt_abc123", timezone=None)
+            assert evt.timezone is None
+            assert _sent(route) == {"timezone": None}
+
+    @respx.mock
+    def test_update_omits_timezone(self) -> None:
+        route = respx.patch(CAL_EVENT_PATH).mock(return_value=httpx.Response(200, json=EVENT_DATA))
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            client.events.update("cal_abc123", "evt_abc123", title="Renamed")
+            assert _sent(route) == {"title": "Renamed"}
+
+    @respx.mock
+    def test_update_by_id_timezone(self) -> None:
+        route = respx.patch(BY_ID_PATH).mock(return_value=httpx.Response(200, json=TZ_EVENT_DATA))
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            evt = client.events.update_by_id("evt_abc123", timezone="America/Los_Angeles")
+            assert evt.timezone == "America/Los_Angeles"
+            assert _sent(route) == {"timezone": "America/Los_Angeles"}
+
+    @respx.mock
+    def test_update_by_id_clears(self) -> None:
+        route = respx.patch(BY_ID_PATH).mock(return_value=httpx.Response(200, json=EVENT_DATA))
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            client.events.update_by_id("evt_abc123", timezone=None)
+            assert _sent(route) == {"timezone": None}
+
+    @respx.mock
+    def test_list_expand_parses_local_fields(self) -> None:
+        respx.get(f"{BASE}/v1/calendars/cal_abc123/events").mock(
+            return_value=httpx.Response(
+                200, json={"data": [TZ_INSTANCE_DATA], "total": 1, "limit": 50, "offset": 0}
+            )
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            pager = client.events.list(
+                "cal_abc123",
+                start_after="2026-03-01T00:00:00Z",
+                start_before="2026-04-01T00:00:00Z",
+                expand=True,
+            )
+            inst = pager.data[0]
+            assert inst.start_local == "2026-03-10T09:00:00"
+            assert inst.utc_offset == "-07:00"
+
+
+class TestAsyncEventsTimezone:
+    @respx.mock
+    async def test_create_with_timezone(self) -> None:
+        route = respx.post(f"{BASE}/v1/calendars/cal_abc123/events").mock(
+            return_value=httpx.Response(201, json=TZ_EVENT_DATA)
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            evt = await client.events.create(
+                "cal_abc123",
+                title="Strategy Sync",
+                start_time="2026-03-10T16:00:00Z",
+                end_time="2026-03-10T16:30:00Z",
+                timezone="America/Los_Angeles",
+            )
+            assert evt.timezone == "America/Los_Angeles"
+            assert _sent(route)["timezone"] == "America/Los_Angeles"
+
+    @respx.mock
+    async def test_update_sets_timezone(self) -> None:
+        route = respx.patch(CAL_EVENT_PATH).mock(
+            return_value=httpx.Response(200, json={**TZ_EVENT_DATA, "droppedExdates": []})
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            evt = await client.events.update(
+                "cal_abc123", "evt_abc123", timezone="America/Los_Angeles"
+            )
+            assert evt.dropped_exdates == []
+            assert _sent(route) == {"timezone": "America/Los_Angeles"}
+
+    @respx.mock
+    async def test_update_omits(self) -> None:
+        route = respx.patch(CAL_EVENT_PATH).mock(return_value=httpx.Response(200, json=EVENT_DATA))
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            await client.events.update("cal_abc123", "evt_abc123", title="Renamed")
+            assert _sent(route) == {"title": "Renamed"}
+
+    @respx.mock
+    async def test_update_by_id_clears(self) -> None:
+        route = respx.patch(BY_ID_PATH).mock(return_value=httpx.Response(200, json=EVENT_DATA))
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE) as client:
+            await client.events.update_by_id("evt_abc123", timezone=None)
+            assert _sent(route) == {"timezone": None}
