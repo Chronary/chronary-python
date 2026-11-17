@@ -2,6 +2,10 @@
 
 All notable changes to `chronary` (Python SDK) will be documented in this file starting with the soft-launch release.
 
+## 0.11.1 — 2026-11-16
+
+- README: the plans table gains the Developer plan. Developer now has every paid-plan feature, scheduling proposals (1,000 a month) and temporal holds included (#2331). No code change.
+
 ## 0.11.0 — 2026-11-16
 
 - **Time-zone-aware recurrence (#2276).** `events.create` takes `timezone` (IANA, e.g. `"America/Los_Angeles"`), and `events.update` / `events.update_by_id` take it too (explicit `None` returns the series to UTC). A recurring series then repeats on local wall time: a weekly 16:00 stays 16:00 local across daylight-saving changes, and BYDAY, the `start_time` match and a date-only UNTIL are read in that zone. `timezone`, `recurrence_rule` and `start_time` sent together are validated once, on the merged result. `Event` gains `timezone`, and expanded instances (`expand=True`) gain `start_local`, `utc_offset` and `dst_adjusted` (`"gap"` when a local time skipped by a DST gap was moved forward).
