@@ -124,7 +124,8 @@ class AuditLog(SyncAPIResource):
         """List audit-log entries for the calling organization.
 
         Results are ordered by time descending and clamped to the per-tier
-        retention window (Free: 3 days, Pro: 90 days, Custom: per contract).
+        retention window (Free: 3 days, Developer: 30 days, Pro: 90 days, Custom: per
+        contract).
         Only org-level API keys may call this endpoint.
 
         Args:

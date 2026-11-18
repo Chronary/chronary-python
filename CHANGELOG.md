@@ -2,6 +2,11 @@
 
 All notable changes to `chronary` (Python SDK) will be documented in this file starting with the soft-launch release.
 
+## 0.12.0 — 2026-11-17
+
+- `client.usage.get()` returns the new `calendar_connections` field (`ResourceUsage`, or `None` from a server that predates it): live Google / Microsoft calendar connections vs. the plan cap (#2397).
+- Docstrings for `recurrence_rule`, the usage caps and the audit log name the Developer plan: Free 1 / Developer 50 / Pro 250 recurring series, with no end date required on Developer and Pro, and 30-day audit history on Developer. They previously said "Pro — 250 recurring events, unbounded allowed" and left out Developer (#2397).
+
 ## 0.11.1 — 2026-11-16
 
 - README: the plans table gains the Developer plan. Developer now has every paid-plan feature, scheduling proposals (1,000 a month) and temporal holds included (#2331). No code change.

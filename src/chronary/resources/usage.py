@@ -64,10 +64,14 @@ class UsageResponse(ChronaryModel):
     agents: ResourceUsage
     calendars: ResourceUsage
     events: ResourceUsage
-    # Active recurring series masters. Plan-capped: Free 1, Pro 250.
+    # Active recurring series masters. Plan-capped: Free 1, Developer 50, Pro 250.
     recurring_events: ResourceUsage
-    # Active public booking pages. Plan-capped: Free 1, Pro 25.
+    # Active public booking pages. Plan-capped: Free 1, Developer 5, Pro 25.
     booking_pages: ResourceUsage
+    # Live Google / Microsoft calendar connections vs. the plan cap
+    # (Free 1, Developer 5, Pro 25; limit None = unlimited). None when the
+    # server predates the field.
+    calendar_connections: ResourceUsage | None = None
     api_calls: ResourceUsage
     # Webhook deliveries this month.
     webhooks: ResourceUsage

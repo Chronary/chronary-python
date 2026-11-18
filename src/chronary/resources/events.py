@@ -120,8 +120,8 @@ class EventUpdateParams(TypedDict, total=False):
     reminders: list[int]
     # Full-series edit: replaces the recurrence rule on the whole series.
     # Explicit None clears the rule, converting the series back to a one-off
-    # event. Same plan limits as create (Free: 1 + bounded within 90 days;
-    # Pro: 250 + unbounded allowed).
+    # event. Same plan limits as create (Free: 1 series, bounded within 90
+    # days; Developer: 50, Pro: 250, both allow series with no end date).
     recurrence_rule: str | None
     # IANA time zone the series repeats in; None returns the series to UTC.
     timezone: str | None
@@ -177,7 +177,8 @@ class Events(SyncAPIResource):
         ``"FREQ=WEEKLY;BYDAY=MO,WE;COUNT=12"``) makes the event a recurring
         series master. Not allowed with ``status="hold"``. Plan limits: Free —
         1 recurring series and the series must end within 90 days (bounded
-        COUNT/UNTIL required); Pro — 250 recurring events, unbounded allowed.
+        COUNT/UNTIL required); Developer — 50 recurring series, Pro — 250,
+        and both allow series with no end date.
         Raises 400 for an invalid rule, 403 (plan_required), or 429 (quota).
 
         ``timezone`` (IANA, e.g. ``"America/Los_Angeles"``) makes the series
@@ -539,7 +540,8 @@ class AsyncEvents(AsyncAPIResource):
         ``"FREQ=WEEKLY;BYDAY=MO,WE;COUNT=12"``) makes the event a recurring
         series master. Not allowed with ``status="hold"``. Plan limits: Free —
         1 recurring series and the series must end within 90 days (bounded
-        COUNT/UNTIL required); Pro — 250 recurring events, unbounded allowed.
+        COUNT/UNTIL required); Developer — 50 recurring series, Pro — 250,
+        and both allow series with no end date.
         Raises 400 for an invalid rule, 403 (plan_required), or 429 (quota).
 
         ``timezone`` (IANA, e.g. ``"America/Los_Angeles"``) makes the series

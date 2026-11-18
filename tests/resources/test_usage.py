@@ -65,6 +65,7 @@ USAGE_DATA = {
     "events": {"used": 50, "limit": 100},
     "recurring_events": {"used": 1, "limit": 1},
     "booking_pages": {"used": 1, "limit": 1},
+    "calendar_connections": {"used": 0, "limit": 1},
     "api_calls": {"used": 900, "limit": 1000},
     "webhooks": {"used": 50, "limit": 1000},
     "webhook_endpoints": {"used": 1, "limit": 1},
@@ -103,6 +104,9 @@ class TestSyncUsage:
             assert isinstance(usage.booking_pages, ResourceUsage)
             assert usage.booking_pages.used == 1
             assert usage.booking_pages.limit == 1
+            assert usage.calendar_connections is not None
+            assert usage.calendar_connections.used == 0
+            assert usage.calendar_connections.limit == 1
             assert usage.ical_subscriptions.used == 0
             assert usage.proposals.used == 0
             assert usage.proposals.limit == 0
@@ -130,6 +134,13 @@ class TestSyncUsage:
         with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             usage = client.usage.get()
             assert usage._request_id == "req_usage_1"
+
+    @respx.mock
+    def test_calendar_connections_absent_from_older_server(self) -> None:
+        data = {k: v for k, v in USAGE_DATA.items() if k != "calendar_connections"}
+        respx.get(f"{BASE}/v1/usage").mock(return_value=httpx.Response(200, json=data))
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            assert client.usage.get().calendar_connections is None
 
     @respx.mock
     def test_null_limit_on_scale_plan(self) -> None:
