@@ -5,6 +5,7 @@ import pytest
 import respx
 
 from chronary import (
+    AgentSignUpAnonymousResponse,
     AgentSignUpResponse,
     AgentVerifyResponse,
     AsyncChronary,
@@ -23,6 +24,15 @@ NEW_ORG_RESPONSE = {
 }
 
 EXISTING_ORG_RESPONSE = {"message": "Verification code sent to email"}
+
+ANON_RESPONSE = {
+    "org_id": "11111111-2222-3333-4444-555555555555",
+    "agent_id": "agt_anon",
+    "api_key": "chr_sk_anon",
+    "claim_url": "https://console.chronary.ai/claim/anonymous#token=tok",
+    "expires_at": "2026-11-20T12:00:00.000Z",
+    "plan": "free-agent-unverified",
+}
 
 
 class TestSyncAgentAuth:
@@ -133,7 +143,71 @@ class TestSyncAgentAuth:
                 client.agent_auth.verify(otp="000000")
 
 
+class TestSyncAgentAuthAnonymous:
+    @respx.mock
+    def test_sign_up_anonymous_returns_key_and_claim_url(self) -> None:
+        route = respx.post(f"{BASE}/v1/agent/sign-up/anonymous").mock(
+            return_value=httpx.Response(201, json=ANON_RESPONSE)
+        )
+        with Chronary(api_key=None, base_url=BASE) as client:
+            result = client.agent_auth.sign_up_anonymous(
+                agent_name="Playground", tos_version="2026-04-17"
+            )
+
+        assert isinstance(result, AgentSignUpAnonymousResponse)
+        assert result.api_key == "chr_sk_anon"
+        assert result.claim_url.endswith("#token=tok")
+        assert result.plan == "free-agent-unverified"
+        req = route.calls.last.request
+        assert "authorization" not in {k.lower() for k in req.headers}
+        sent = req.content.decode()
+        assert '"agent_name":"Playground"' in sent.replace(" ", "")
+        assert "source" not in sent
+
+    @respx.mock
+    def test_sign_up_anonymous_sends_source(self) -> None:
+        route = respx.post(f"{BASE}/v1/agent/sign-up/anonymous").mock(
+            return_value=httpx.Response(201, json=ANON_RESPONSE)
+        )
+        with Chronary(api_key=None, base_url=BASE) as client:
+            client.agent_auth.sign_up_anonymous(
+                agent_name="P", tos_version="v", source="playground"
+            )
+        assert '"source":"playground"' in route.calls.last.request.content.decode().replace(" ", "")
+
+    @respx.mock
+    def test_sign_up_anonymous_propagates_503(self) -> None:
+        respx.post(f"{BASE}/v1/agent/sign-up/anonymous").mock(
+            return_value=httpx.Response(
+                503,
+                json={
+                    "error": {
+                        "type": "anonymous_signup_disabled",
+                        "message": "Sign-up without an email is not available.",
+                        "request_id": "req_1",
+                    }
+                },
+            )
+        )
+        with (
+            Chronary(api_key=None, base_url=BASE, max_retries=0) as client,
+            pytest.raises(ChronaryError),
+        ):
+            client.agent_auth.sign_up_anonymous(agent_name="P", tos_version="v")
+
+
 class TestAsyncAgentAuth:
+    @respx.mock
+    async def test_sign_up_anonymous(self) -> None:
+        respx.post(f"{BASE}/v1/agent/sign-up/anonymous").mock(
+            return_value=httpx.Response(201, json=ANON_RESPONSE)
+        )
+        async with AsyncChronary(api_key=None, base_url=BASE) as client:
+            result = await client.agent_auth.sign_up_anonymous(
+                agent_name="Playground", tos_version="2026-04-17", source="agent"
+            )
+        assert result.agent_id == "agt_anon"
+
     @respx.mock
     async def test_sign_up_new_org(self) -> None:
         respx.post(f"{BASE}/v1/agent/sign-up").mock(

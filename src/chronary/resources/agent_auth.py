@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from typing_extensions import Required, TypedDict
+from typing_extensions import NotRequired, Required, TypedDict
 
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
@@ -16,6 +16,12 @@ class AgentSignUpParams(TypedDict):
     email: Required[str]
     agent_name: Required[str]
     tos_version: Required[str]
+
+
+class AgentSignUpAnonymousParams(TypedDict):
+    agent_name: Required[str]
+    tos_version: Required[str]
+    source: NotRequired[Literal["playground", "agent"]]
 
 
 class AgentVerifyParams(TypedDict):
@@ -51,6 +57,24 @@ class AgentSignUpResponse(ChronaryModel):
         return self.api_key is not None
 
 
+class AgentSignUpAnonymousResponse(ChronaryModel):
+    """Response from ``POST /v1/agent/sign-up/anonymous`` (HTTP 201).
+
+    A claimable organization with no email. ``api_key`` works at once at
+    Sandbox limits until ``expires_at``. Give ``claim_url`` to the person who
+    should own the calendar: opening it while signed in to the console moves
+    everything into their account, and this key stops working. Both are shown
+    once; unclaimed, the org and its data are deleted after ``expires_at``.
+    """
+
+    org_id: str
+    agent_id: str
+    api_key: str
+    claim_url: str
+    expires_at: str
+    plan: str
+
+
 class AgentVerifyResponse(ChronaryModel):
     """Response from ``POST /v1/agent/verify``."""
 
@@ -67,6 +91,7 @@ class AgentVerifyResponse(ChronaryModel):
 # ---------------------------------------------------------------------------
 
 _SIGN_UP_PATH = "/v1/agent/sign-up"
+_SIGN_UP_ANONYMOUS_PATH = "/v1/agent/sign-up/anonymous"
 _VERIFY_PATH = "/v1/agent/verify"
 
 
@@ -100,6 +125,30 @@ class AgentAuth(SyncAPIResource):
         resp = self._request("POST", _SIGN_UP_PATH, json=body, max_retries=max_retries)
         return self._build(AgentSignUpResponse, resp)
 
+    def sign_up_anonymous(
+        self,
+        *,
+        agent_name: str,
+        tos_version: str,
+        source: Literal["playground", "agent"] | None = None,
+        max_retries: int | None = None,
+    ) -> AgentSignUpAnonymousResponse:
+        """Sign up without an email: a claimable organization.
+
+        No authentication required. The org sends and receives no email and
+        cannot create webhook endpoints or call :py:meth:`verify`. Raises on
+        409 ``tos_version_stale``, 429 ``rate_limit_error`` and 503
+        (``anonymous_signup_disabled``, ``signups_paused``,
+        ``anonymous_signup_capacity``, ``temporarily_disabled``).
+        """
+        body: dict[str, Any] = {"agent_name": agent_name, "tos_version": tos_version}
+        if source is not None:
+            body["source"] = source
+        resp = self._request(
+            "POST", _SIGN_UP_ANONYMOUS_PATH, json=body, max_retries=max_retries
+        )
+        return self._build(AgentSignUpAnonymousResponse, resp)
+
     def verify(
         self,
         *,
@@ -132,6 +181,30 @@ class AsyncAgentAuth(AsyncAPIResource):
             "POST", _SIGN_UP_PATH, json=body, max_retries=max_retries
         )
         return self._build(AgentSignUpResponse, resp)
+
+    async def sign_up_anonymous(
+        self,
+        *,
+        agent_name: str,
+        tos_version: str,
+        source: Literal["playground", "agent"] | None = None,
+        max_retries: int | None = None,
+    ) -> AgentSignUpAnonymousResponse:
+        """Sign up without an email: a claimable organization.
+
+        No authentication required. The org sends and receives no email and
+        cannot create webhook endpoints or call :py:meth:`verify`. Raises on
+        409 ``tos_version_stale``, 429 ``rate_limit_error`` and 503
+        (``anonymous_signup_disabled``, ``signups_paused``,
+        ``anonymous_signup_capacity``, ``temporarily_disabled``).
+        """
+        body: dict[str, Any] = {"agent_name": agent_name, "tos_version": tos_version}
+        if source is not None:
+            body["source"] = source
+        resp = await self._request(
+            "POST", _SIGN_UP_ANONYMOUS_PATH, json=body, max_retries=max_retries
+        )
+        return self._build(AgentSignUpAnonymousResponse, resp)
 
     async def verify(
         self,

@@ -17,6 +17,8 @@ from ._exceptions import (
 from ._version import __version__
 from .pagination import AsyncPager, ListResponse, SyncPager
 from .resources.agent_auth import (
+    AgentSignUpAnonymousParams,
+    AgentSignUpAnonymousResponse,
     AgentSignUpParams,
     AgentSignUpResponse,
     AgentVerifyParams,
@@ -239,6 +241,8 @@ __all__ = [
     "PlanLimits",
     "PlansListResponse",
     # Agent auth
+    "AgentSignUpAnonymousParams",
+    "AgentSignUpAnonymousResponse",
     "AgentSignUpParams",
     "AgentSignUpResponse",
     "AgentVerifyParams",

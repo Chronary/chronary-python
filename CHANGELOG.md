@@ -2,6 +2,10 @@
 
 All notable changes to `chronary` (Python SDK) will be documented in this file starting with the soft-launch release.
 
+## 0.13.0 — 2026-11-17
+
+- `client.agent_auth.sign_up_anonymous(agent_name=..., tos_version=..., source=None)` calls `POST /v1/agent/sign-up/anonymous`: a claimable organization with no email. Returns `AgentSignUpAnonymousResponse` with `api_key` (works at once, Sandbox limits), a one-time `claim_url` for the person who should own the calendar, and `expires_at` (72 hours; unclaimed, the org and its data are deleted). Sync and async (#2335).
+
 ## 0.12.0 — 2026-11-17
 
 - `client.usage.get()` returns the new `calendar_connections` field (`ResourceUsage`, or `None` from a server that predates it): live Google / Microsoft calendar connections vs. the plan cap (#2397).

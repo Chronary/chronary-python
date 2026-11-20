@@ -86,6 +86,62 @@ jobs:
       - name: Build
         run: python -m build
 
+      # SBOM (EU CRA Annex I Part II (1), #1634): CycloneDX, attached to the
+      # GitHub Release. Fail-closed: these run before anything is published,
+      # with no continue-on-error, so no release ships without a valid SBOM.
+      # Tool pins and the validator live in scripts/public-release/sbom.mjs.
+      - name: Generate SBOM
+        run: |
+          set -euo pipefail
+          # Install the built wheel alone into a clean venv (the runtime
+          # dependencies a user gets from PyPI), then describe that venv.
+          # Written outside dist/, which the PyPI upload reads.
+          python -m venv "$RUNNER_TEMP/sbom-tool"
+          "$RUNNER_TEMP/sbom-tool/bin/python" -m pip install --quiet "cyclonedx-bom==7.5.0"
+          python -m venv "$RUNNER_TEMP/sbom-target"
+          wheel="$(ls dist/*.whl)"
+          "$RUNNER_TEMP/sbom-target/bin/python" -m pip install --quiet "$wheel"
+          "$RUNNER_TEMP/sbom-target/bin/python" -m pip uninstall --quiet --yes pip
+          mkdir -p sbom
+          SBOM_FILE="sbom/chronary-python-${GITHUB_REF_NAME#v}.cdx.json"
+          "$RUNNER_TEMP/sbom-tool/bin/cyclonedx-py" environment \
+            --pyproject pyproject.toml --mc-type library --sv 1.6 \
+            --output-reproducible --of JSON -o "$SBOM_FILE" \
+            "$RUNNER_TEMP/sbom-target/bin/python"
+          echo "SBOM_FILE=$SBOM_FILE" >> "$GITHUB_ENV"
+
+      - name: Validate SBOM
+        env:
+          EXPECTED_NAME: 'chronary'
+        run: |
+          node - "$SBOM_FILE" "$EXPECTED_NAME" "${GITHUB_REF_NAME#v}" <<'JS'
+          const fs = require('fs');
+          const [file, expectedName, expectedVersion] = process.argv.slice(2);
+          const fail = (msg) => {
+            console.error('::error::SBOM ' + file + ': ' + msg);
+            process.exit(1);
+          };
+          let bom;
+          try {
+            bom = JSON.parse(fs.readFileSync(file, 'utf8'));
+          } catch (e) {
+            fail('not readable JSON (' + e.message + ')');
+          }
+          if (bom.bomFormat !== 'CycloneDX') fail('bomFormat is ' + JSON.stringify(bom.bomFormat) + ', expected CycloneDX');
+          if (!/^1\.[4-9]$/.test(String(bom.specVersion))) fail('unsupported specVersion ' + JSON.stringify(bom.specVersion));
+          const main = bom.metadata && bom.metadata.component;
+          if (!main) fail('metadata.component is missing');
+          const name = [main.group, main.name].filter(Boolean).join('/');
+          if (name !== expectedName) fail('main component is ' + JSON.stringify(name) + ', expected ' + JSON.stringify(expectedName));
+          const bare = (v) => String(v).replace(/^v/, '');
+          if (!expectedVersion) fail('no expected version given');
+          if (main.version === undefined || main.version === '') main.version = bare(expectedVersion);
+          else if (bare(main.version) !== bare(expectedVersion)) fail('version is ' + main.version + ', expected ' + expectedVersion);
+          if (bom.components !== undefined && !Array.isArray(bom.components)) fail('components is not an array');
+          fs.writeFileSync(file, JSON.stringify(bom, null, 2) + '\n');
+          console.log('SBOM ok: ' + name + '@' + main.version + ', ' + (bom.components || []).length + ' components');
+          JS
+
       - name: Publish to PyPI (Trusted Publishing + attestations)
         if: steps.manifest.outputs.publish_registry == 'true'
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
@@ -97,12 +153,16 @@ jobs:
         if: github.event.repository.visibility == 'public'
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
-          subject-path: 'dist/*'
+          # The SBOM too (it lives outside dist/), so a replaced Release asset
+          # is detectable.
+          subject-path: |
+            dist/*
+            sbom/*.cdx.json
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" dist/* \
+          gh release create "${GITHUB_REF_NAME}" dist/* "$SBOM_FILE" \
             --title "chronary ${GITHUB_REF_NAME}" \
             --notes-file RELEASE_NOTES.txt
