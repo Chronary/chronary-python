@@ -13,6 +13,7 @@ from typing_extensions import Required, TypedDict
 
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
+from .._paths import path_segment
 from ..pagination import AsyncPager, ListResponse, SyncPager
 
 # ---------------------------------------------------------------------------
@@ -309,7 +310,7 @@ class Webhooks(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> Webhook:
-        resp = self._request("GET", f"{_WEBHOOKS_PATH}/{webhook_id}", max_retries=max_retries)
+        resp = self._request("GET", f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}", max_retries=max_retries)
         return self._build(Webhook, resp)
 
     def update(
@@ -329,7 +330,7 @@ class Webhooks(SyncAPIResource):
         if active is not None:
             body["active"] = active
         resp = self._request(
-            "PATCH", f"{_WEBHOOKS_PATH}/{webhook_id}", json=body, max_retries=max_retries
+            "PATCH", f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}", json=body, max_retries=max_retries
         )
         return self._build(Webhook, resp)
 
@@ -339,7 +340,7 @@ class Webhooks(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> None:
-        self._request("DELETE", f"{_WEBHOOKS_PATH}/{webhook_id}", max_retries=max_retries)
+        self._request("DELETE", f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}", max_retries=max_retries)
 
     def list_deliveries(
         self,
@@ -382,7 +383,7 @@ class Webhooks(SyncAPIResource):
             params["is_test"] = str(is_test).lower()
         if cursor is not None:
             params["cursor"] = cursor
-        path = f"{_WEBHOOKS_PATH}/{webhook_id}/deliveries"
+        path = f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}/deliveries"
         resp = self._request("GET", path, params=params, max_retries=max_retries)
         return WebhookDeliveryListResponse.model_validate(resp.json())
 
@@ -394,7 +395,7 @@ class Webhooks(SyncAPIResource):
         max_retries: int | None = None,
     ) -> WebhookDeliveryDetail:
         """One delivery with its payload and every attempt, oldest first."""
-        path = f"{_WEBHOOKS_PATH}/{webhook_id}/deliveries/{delivery_id}"
+        path = f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}/deliveries/{path_segment(delivery_id)}"
         resp = self._request("GET", path, max_retries=max_retries)
         return WebhookDeliveryDetail.model_validate(resp.json())
 
@@ -411,7 +412,7 @@ class Webhooks(SyncAPIResource):
         one attempt and does not count toward the monthly quota. Poll
         ``get_delivery`` with the returned ``delivery_id`` for the result.
         """
-        path = f"{_WEBHOOKS_PATH}/{webhook_id}/test"
+        path = f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}/test"
         resp = self._request("POST", path, json={"event_type": event_type}, max_retries=max_retries)
         return WebhookTestSent.model_validate(resp.json())
 
@@ -431,7 +432,7 @@ class Webhooks(SyncAPIResource):
         quota. The endpoint must be active. Poll ``get_delivery`` with the
         returned ``delivery_id`` for the result. Limited to 30 per minute.
         """
-        path = f"{_WEBHOOKS_PATH}/{webhook_id}/deliveries/{delivery_id}/replay"
+        path = f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}/deliveries/{path_segment(delivery_id)}/replay"
         resp = self._request("POST", path, idempotency_key=idempotency_key, max_retries=max_retries)
         return WebhookReplaySent.model_validate(resp.json())
 
@@ -449,7 +450,7 @@ class Webhooks(SyncAPIResource):
         passed: "now", "1h", "24h" (the API default) or "7d". ``verify_signature``
         accepts either header, so receivers can switch secrets in that window.
         """
-        path = f"{_WEBHOOKS_PATH}/{webhook_id}/secret/rotate"
+        path = f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}/secret/rotate"
         body: dict[str, Any] = {} if expire_old_in is None else {"expire_old_in": expire_old_in}
         resp = self._request("POST", path, json=body, max_retries=max_retries)
         return RotatedWebhookSecret.model_validate(resp.json())
@@ -530,7 +531,7 @@ class AsyncWebhooks(AsyncAPIResource):
         max_retries: int | None = None,
     ) -> Webhook:
         resp = await self._request(
-            "GET", f"{_WEBHOOKS_PATH}/{webhook_id}", max_retries=max_retries
+            "GET", f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}", max_retries=max_retries
         )
         return self._build(Webhook, resp)
 
@@ -551,7 +552,7 @@ class AsyncWebhooks(AsyncAPIResource):
         if active is not None:
             body["active"] = active
         resp = await self._request(
-            "PATCH", f"{_WEBHOOKS_PATH}/{webhook_id}", json=body, max_retries=max_retries
+            "PATCH", f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}", json=body, max_retries=max_retries
         )
         return self._build(Webhook, resp)
 
@@ -562,7 +563,7 @@ class AsyncWebhooks(AsyncAPIResource):
         max_retries: int | None = None,
     ) -> None:
         await self._request(
-            "DELETE", f"{_WEBHOOKS_PATH}/{webhook_id}", max_retries=max_retries
+            "DELETE", f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}", max_retries=max_retries
         )
 
     async def list_deliveries(
@@ -606,7 +607,7 @@ class AsyncWebhooks(AsyncAPIResource):
             params["is_test"] = str(is_test).lower()
         if cursor is not None:
             params["cursor"] = cursor
-        path = f"{_WEBHOOKS_PATH}/{webhook_id}/deliveries"
+        path = f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}/deliveries"
         resp = await self._request("GET", path, params=params, max_retries=max_retries)
         return WebhookDeliveryListResponse.model_validate(resp.json())
 
@@ -618,7 +619,7 @@ class AsyncWebhooks(AsyncAPIResource):
         max_retries: int | None = None,
     ) -> WebhookDeliveryDetail:
         """One delivery with its payload and every attempt, oldest first."""
-        path = f"{_WEBHOOKS_PATH}/{webhook_id}/deliveries/{delivery_id}"
+        path = f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}/deliveries/{path_segment(delivery_id)}"
         resp = await self._request("GET", path, max_retries=max_retries)
         return WebhookDeliveryDetail.model_validate(resp.json())
 
@@ -635,7 +636,7 @@ class AsyncWebhooks(AsyncAPIResource):
         one attempt and does not count toward the monthly quota. Poll
         ``get_delivery`` with the returned ``delivery_id`` for the result.
         """
-        path = f"{_WEBHOOKS_PATH}/{webhook_id}/test"
+        path = f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}/test"
         resp = await self._request(
             "POST", path, json={"event_type": event_type}, max_retries=max_retries
         )
@@ -657,7 +658,7 @@ class AsyncWebhooks(AsyncAPIResource):
         quota. The endpoint must be active. Poll ``get_delivery`` with the
         returned ``delivery_id`` for the result. Limited to 30 per minute.
         """
-        path = f"{_WEBHOOKS_PATH}/{webhook_id}/deliveries/{delivery_id}/replay"
+        path = f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}/deliveries/{path_segment(delivery_id)}/replay"
         resp = await self._request(
             "POST", path, idempotency_key=idempotency_key, max_retries=max_retries
         )
@@ -677,7 +678,7 @@ class AsyncWebhooks(AsyncAPIResource):
         passed: "now", "1h", "24h" (the API default) or "7d". ``verify_signature``
         accepts either header, so receivers can switch secrets in that window.
         """
-        path = f"{_WEBHOOKS_PATH}/{webhook_id}/secret/rotate"
+        path = f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}/secret/rotate"
         body: dict[str, Any] = {} if expire_old_in is None else {"expire_old_in": expire_old_in}
         resp = await self._request("POST", path, json=body, max_retries=max_retries)
         return RotatedWebhookSecret.model_validate(resp.json())

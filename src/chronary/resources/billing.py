@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
+from .._paths import path_segment
 
 if TYPE_CHECKING:
     from .._base_client import AsyncAPIClient, SyncAPIClient
@@ -170,14 +171,14 @@ class UpgradeRequests(SyncAPIResource):
 
     def get(self, request_id: str, *, max_retries: int | None = None) -> UpgradeRequest:
         resp = self._request(
-            "GET", f"{_UPGRADE_REQUESTS_PATH}/{request_id}",
+            "GET", f"{_UPGRADE_REQUESTS_PATH}/{path_segment(request_id)}",
             max_retries=max_retries,
         )
         return self._build(UpgradeRequest, resp)
 
     def cancel(self, request_id: str, *, max_retries: int | None = None) -> UpgradeRequest:
         resp = self._request(
-            "POST", f"{_UPGRADE_REQUESTS_PATH}/{request_id}/cancel",
+            "POST", f"{_UPGRADE_REQUESTS_PATH}/{path_segment(request_id)}/cancel",
             max_retries=max_retries,
         )
         return self._build(UpgradeRequest, resp)
@@ -229,14 +230,14 @@ class AsyncUpgradeRequests(AsyncAPIResource):
 
     async def get(self, request_id: str, *, max_retries: int | None = None) -> UpgradeRequest:
         resp = await self._request(
-            "GET", f"{_UPGRADE_REQUESTS_PATH}/{request_id}",
+            "GET", f"{_UPGRADE_REQUESTS_PATH}/{path_segment(request_id)}",
             max_retries=max_retries,
         )
         return self._build(UpgradeRequest, resp)
 
     async def cancel(self, request_id: str, *, max_retries: int | None = None) -> UpgradeRequest:
         resp = await self._request(
-            "POST", f"{_UPGRADE_REQUESTS_PATH}/{request_id}/cancel",
+            "POST", f"{_UPGRADE_REQUESTS_PATH}/{path_segment(request_id)}/cancel",
             max_retries=max_retries,
         )
         return self._build(UpgradeRequest, resp)

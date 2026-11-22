@@ -7,6 +7,7 @@ from typing_extensions import NotRequired, Required, TypedDict
 
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
+from .._paths import path_segment
 from ..pagination import AsyncPager, ListResponse, SyncPager
 
 # Sentinel for distinguishing "not passed" from "explicitly passed None"
@@ -233,7 +234,7 @@ class BookingPages(SyncAPIResource):
         )
 
     def get(self, booking_page_id: str, *, max_retries: int | None = None) -> BookingPage:
-        resp = self._request("GET", f"{_BOOKING_PAGES_PATH}/{booking_page_id}", max_retries=max_retries)
+        resp = self._request("GET", f"{_BOOKING_PAGES_PATH}/{path_segment(booking_page_id)}", max_retries=max_retries)
         return self._build(BookingPage, resp)
 
     def update(
@@ -256,12 +257,12 @@ class BookingPages(SyncAPIResource):
             min_notice_minutes, timezone, availability_constraints, active,
         )
         resp = self._request(
-            "PATCH", f"{_BOOKING_PAGES_PATH}/{booking_page_id}", json=body, max_retries=max_retries
+            "PATCH", f"{_BOOKING_PAGES_PATH}/{path_segment(booking_page_id)}", json=body, max_retries=max_retries
         )
         return self._build(BookingPage, resp)
 
     def delete(self, booking_page_id: str, *, max_retries: int | None = None) -> None:
-        self._request("DELETE", f"{_BOOKING_PAGES_PATH}/{booking_page_id}", max_retries=max_retries)
+        self._request("DELETE", f"{_BOOKING_PAGES_PATH}/{path_segment(booking_page_id)}", max_retries=max_retries)
 
     def list_bookings(
         self,
@@ -278,14 +279,14 @@ class BookingPages(SyncAPIResource):
         not linked to their page.
         """
         params: dict[str, Any] = {"limit": limit, "cursor": cursor}
-        path = f"{_BOOKING_PAGES_PATH}/{booking_page_id}/bookings"
+        path = f"{_BOOKING_PAGES_PATH}/{path_segment(booking_page_id)}/bookings"
         resp = self._request("GET", path, params=params, max_retries=max_retries)
         return self._build(BookingList, resp)
 
     def rotate_slug(self, booking_page_id: str, *, max_retries: int | None = None) -> BookingPage:
         """Replace the page's public link; the old ``/book/<slug>`` stops working at once."""
         resp = self._request(
-            "POST", f"{_BOOKING_PAGES_PATH}/{booking_page_id}/rotate-slug", max_retries=max_retries
+            "POST", f"{_BOOKING_PAGES_PATH}/{path_segment(booking_page_id)}/rotate-slug", max_retries=max_retries
         )
         return self._build(BookingPage, resp)
 
@@ -348,7 +349,7 @@ class AsyncBookingPages(AsyncAPIResource):
 
     async def get(self, booking_page_id: str, *, max_retries: int | None = None) -> BookingPage:
         resp = await self._request(
-            "GET", f"{_BOOKING_PAGES_PATH}/{booking_page_id}", max_retries=max_retries
+            "GET", f"{_BOOKING_PAGES_PATH}/{path_segment(booking_page_id)}", max_retries=max_retries
         )
         return self._build(BookingPage, resp)
 
@@ -372,13 +373,13 @@ class AsyncBookingPages(AsyncAPIResource):
             min_notice_minutes, timezone, availability_constraints, active,
         )
         resp = await self._request(
-            "PATCH", f"{_BOOKING_PAGES_PATH}/{booking_page_id}", json=body, max_retries=max_retries
+            "PATCH", f"{_BOOKING_PAGES_PATH}/{path_segment(booking_page_id)}", json=body, max_retries=max_retries
         )
         return self._build(BookingPage, resp)
 
     async def delete(self, booking_page_id: str, *, max_retries: int | None = None) -> None:
         await self._request(
-            "DELETE", f"{_BOOKING_PAGES_PATH}/{booking_page_id}", max_retries=max_retries
+            "DELETE", f"{_BOOKING_PAGES_PATH}/{path_segment(booking_page_id)}", max_retries=max_retries
         )
 
     async def list_bookings(
@@ -396,7 +397,7 @@ class AsyncBookingPages(AsyncAPIResource):
         not linked to their page.
         """
         params: dict[str, Any] = {"limit": limit, "cursor": cursor}
-        path = f"{_BOOKING_PAGES_PATH}/{booking_page_id}/bookings"
+        path = f"{_BOOKING_PAGES_PATH}/{path_segment(booking_page_id)}/bookings"
         resp = await self._request("GET", path, params=params, max_retries=max_retries)
         return self._build(BookingList, resp)
 
@@ -405,6 +406,6 @@ class AsyncBookingPages(AsyncAPIResource):
     ) -> BookingPage:
         """Replace the page's public link; the old ``/book/<slug>`` stops working at once."""
         resp = await self._request(
-            "POST", f"{_BOOKING_PAGES_PATH}/{booking_page_id}/rotate-slug", max_retries=max_retries
+            "POST", f"{_BOOKING_PAGES_PATH}/{path_segment(booking_page_id)}/rotate-slug", max_retries=max_retries
         )
         return self._build(BookingPage, resp)

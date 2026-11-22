@@ -8,6 +8,7 @@ from typing_extensions import NotRequired, Required, TypedDict
 
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
+from .._paths import path_segment
 from ..pagination import AsyncPager, ListResponse, SyncPager
 from .availability import AsyncAvailability, Availability
 from .calendars import AgentCalendars, AsyncAgentCalendars
@@ -180,7 +181,7 @@ class Agents(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> Agent:
-        resp = self._request("GET", f"{_AGENTS_PATH}/{agent_id}", max_retries=max_retries)
+        resp = self._request("GET", f"{_AGENTS_PATH}/{path_segment(agent_id)}", max_retries=max_retries)
         return self._build(Agent, resp)
 
     def update(
@@ -203,7 +204,7 @@ class Agents(SyncAPIResource):
         if metadata is not None:
             body["metadata"] = metadata
         resp = self._request(
-            "PATCH", f"{_AGENTS_PATH}/{agent_id}", json=body, max_retries=max_retries
+            "PATCH", f"{_AGENTS_PATH}/{path_segment(agent_id)}", json=body, max_retries=max_retries
         )
         return self._build(Agent, resp)
 
@@ -213,7 +214,7 @@ class Agents(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> None:
-        self._request("DELETE", f"{_AGENTS_PATH}/{agent_id}", max_retries=max_retries)
+        self._request("DELETE", f"{_AGENTS_PATH}/{path_segment(agent_id)}", max_retries=max_retries)
 
 
 # ---------------------------------------------------------------------------
@@ -325,7 +326,7 @@ class AsyncAgents(AsyncAPIResource):
         max_retries: int | None = None,
     ) -> Agent:
         resp = await self._request(
-            "GET", f"{_AGENTS_PATH}/{agent_id}", max_retries=max_retries
+            "GET", f"{_AGENTS_PATH}/{path_segment(agent_id)}", max_retries=max_retries
         )
         return self._build(Agent, resp)
 
@@ -349,7 +350,7 @@ class AsyncAgents(AsyncAPIResource):
         if metadata is not None:
             body["metadata"] = metadata
         resp = await self._request(
-            "PATCH", f"{_AGENTS_PATH}/{agent_id}", json=body, max_retries=max_retries
+            "PATCH", f"{_AGENTS_PATH}/{path_segment(agent_id)}", json=body, max_retries=max_retries
         )
         return self._build(Agent, resp)
 
@@ -360,5 +361,5 @@ class AsyncAgents(AsyncAPIResource):
         max_retries: int | None = None,
     ) -> None:
         await self._request(
-            "DELETE", f"{_AGENTS_PATH}/{agent_id}", max_retries=max_retries
+            "DELETE", f"{_AGENTS_PATH}/{path_segment(agent_id)}", max_retries=max_retries
         )

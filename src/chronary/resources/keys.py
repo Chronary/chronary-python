@@ -7,6 +7,7 @@ from typing_extensions import NotRequired, Required, TypedDict
 
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
+from .._paths import path_segment
 
 
 class ScopedApiKey(ChronaryModel):
@@ -84,7 +85,7 @@ class Keys(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> None:
-        self._request("DELETE", f"{_KEYS_PATH}/{key_id}", max_retries=max_retries)
+        self._request("DELETE", f"{_KEYS_PATH}/{path_segment(key_id)}", max_retries=max_retries)
 
     @staticmethod
     def _build_from_item(
@@ -137,4 +138,4 @@ class AsyncKeys(AsyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> None:
-        await self._request("DELETE", f"{_KEYS_PATH}/{key_id}", max_retries=max_retries)
+        await self._request("DELETE", f"{_KEYS_PATH}/{path_segment(key_id)}", max_retries=max_retries)

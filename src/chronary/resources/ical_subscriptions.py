@@ -7,6 +7,7 @@ from typing_extensions import NotRequired, Required, TypedDict
 
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
+from .._paths import path_segment
 from ..pagination import AsyncPager, ListResponse, SyncPager
 
 # ---------------------------------------------------------------------------
@@ -70,7 +71,7 @@ class ICalSubscriptions(SyncAPIResource):
         label: str | None = None,
         max_retries: int | None = None,
     ) -> ICalSubscription:
-        path = _AGENT_ICAL_PATH.format(agent_id=agent_id)
+        path = _AGENT_ICAL_PATH.format(agent_id=path_segment(agent_id))
         body: dict[str, Any] = {"calendar_id": calendar_id, "url": url}
         if label is not None:
             body["label"] = label
@@ -86,7 +87,7 @@ class ICalSubscriptions(SyncAPIResource):
         offset: int | None = None,
         max_retries: int | None = None,
     ) -> SyncPager[ICalSubscription]:
-        path = _AGENT_ICAL_PATH.format(agent_id=agent_id)
+        path = _AGENT_ICAL_PATH.format(agent_id=path_segment(agent_id))
         params: dict[str, Any] = {
             "status": status,
             "limit": limit,
@@ -116,7 +117,7 @@ class ICalSubscriptions(SyncAPIResource):
         max_retries: int | None = None,
     ) -> ICalSubscription:
         resp = self._request(
-            "GET", f"{_ICAL_PATH}/{subscription_id}", max_retries=max_retries
+            "GET", f"{_ICAL_PATH}/{path_segment(subscription_id)}", max_retries=max_retries
         )
         return self._build(ICalSubscription, resp)
 
@@ -134,7 +135,7 @@ class ICalSubscriptions(SyncAPIResource):
         if url is not None:
             body["url"] = url
         resp = self._request(
-            "PATCH", f"{_ICAL_PATH}/{subscription_id}", json=body, max_retries=max_retries
+            "PATCH", f"{_ICAL_PATH}/{path_segment(subscription_id)}", json=body, max_retries=max_retries
         )
         return self._build(ICalSubscription, resp)
 
@@ -144,7 +145,7 @@ class ICalSubscriptions(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> None:
-        self._request("DELETE", f"{_ICAL_PATH}/{subscription_id}", max_retries=max_retries)
+        self._request("DELETE", f"{_ICAL_PATH}/{path_segment(subscription_id)}", max_retries=max_retries)
 
     def sync(
         self,
@@ -159,7 +160,7 @@ class ICalSubscriptions(SyncAPIResource):
         same feed within a minute raises a 429 error.
         """
         self._request(
-            "POST", f"{_ICAL_PATH}/{subscription_id}/sync", max_retries=max_retries
+            "POST", f"{_ICAL_PATH}/{path_segment(subscription_id)}/sync", max_retries=max_retries
         )
 
     def pause(
@@ -170,7 +171,7 @@ class ICalSubscriptions(SyncAPIResource):
     ) -> ICalSubscription:
         """Stop polling the feed until it is resumed. Pausing a paused feed changes nothing."""
         resp = self._request(
-            "POST", f"{_ICAL_PATH}/{subscription_id}/pause", max_retries=max_retries
+            "POST", f"{_ICAL_PATH}/{path_segment(subscription_id)}/pause", max_retries=max_retries
         )
         return self._build(ICalSubscription, resp)
 
@@ -182,7 +183,7 @@ class ICalSubscriptions(SyncAPIResource):
     ) -> ICalSubscription:
         """Return a paused or failing feed to polling and clear ``last_error``."""
         resp = self._request(
-            "POST", f"{_ICAL_PATH}/{subscription_id}/resume", max_retries=max_retries
+            "POST", f"{_ICAL_PATH}/{path_segment(subscription_id)}/resume", max_retries=max_retries
         )
         return self._build(ICalSubscription, resp)
 
@@ -204,7 +205,7 @@ class AsyncICalSubscriptions(AsyncAPIResource):
         label: str | None = None,
         max_retries: int | None = None,
     ) -> ICalSubscription:
-        path = _AGENT_ICAL_PATH.format(agent_id=agent_id)
+        path = _AGENT_ICAL_PATH.format(agent_id=path_segment(agent_id))
         body: dict[str, Any] = {"calendar_id": calendar_id, "url": url}
         if label is not None:
             body["label"] = label
@@ -220,7 +221,7 @@ class AsyncICalSubscriptions(AsyncAPIResource):
         offset: int | None = None,
         max_retries: int | None = None,
     ) -> AsyncPager[ICalSubscription]:
-        path = _AGENT_ICAL_PATH.format(agent_id=agent_id)
+        path = _AGENT_ICAL_PATH.format(agent_id=path_segment(agent_id))
         params: dict[str, Any] = {
             "status": status,
             "limit": limit,
@@ -250,7 +251,7 @@ class AsyncICalSubscriptions(AsyncAPIResource):
         max_retries: int | None = None,
     ) -> ICalSubscription:
         resp = await self._request(
-            "GET", f"{_ICAL_PATH}/{subscription_id}", max_retries=max_retries
+            "GET", f"{_ICAL_PATH}/{path_segment(subscription_id)}", max_retries=max_retries
         )
         return self._build(ICalSubscription, resp)
 
@@ -268,7 +269,7 @@ class AsyncICalSubscriptions(AsyncAPIResource):
         if url is not None:
             body["url"] = url
         resp = await self._request(
-            "PATCH", f"{_ICAL_PATH}/{subscription_id}", json=body, max_retries=max_retries
+            "PATCH", f"{_ICAL_PATH}/{path_segment(subscription_id)}", json=body, max_retries=max_retries
         )
         return self._build(ICalSubscription, resp)
 
@@ -279,7 +280,7 @@ class AsyncICalSubscriptions(AsyncAPIResource):
         max_retries: int | None = None,
     ) -> None:
         await self._request(
-            "DELETE", f"{_ICAL_PATH}/{subscription_id}", max_retries=max_retries
+            "DELETE", f"{_ICAL_PATH}/{path_segment(subscription_id)}", max_retries=max_retries
         )
 
     async def sync(
@@ -295,7 +296,7 @@ class AsyncICalSubscriptions(AsyncAPIResource):
         same feed within a minute raises a 429 error.
         """
         await self._request(
-            "POST", f"{_ICAL_PATH}/{subscription_id}/sync", max_retries=max_retries
+            "POST", f"{_ICAL_PATH}/{path_segment(subscription_id)}/sync", max_retries=max_retries
         )
 
     async def pause(
@@ -306,7 +307,7 @@ class AsyncICalSubscriptions(AsyncAPIResource):
     ) -> ICalSubscription:
         """Stop polling the feed until it is resumed. Pausing a paused feed changes nothing."""
         resp = await self._request(
-            "POST", f"{_ICAL_PATH}/{subscription_id}/pause", max_retries=max_retries
+            "POST", f"{_ICAL_PATH}/{path_segment(subscription_id)}/pause", max_retries=max_retries
         )
         return self._build(ICalSubscription, resp)
 
@@ -318,6 +319,6 @@ class AsyncICalSubscriptions(AsyncAPIResource):
     ) -> ICalSubscription:
         """Return a paused or failing feed to polling and clear ``last_error``."""
         resp = await self._request(
-            "POST", f"{_ICAL_PATH}/{subscription_id}/resume", max_retries=max_retries
+            "POST", f"{_ICAL_PATH}/{path_segment(subscription_id)}/resume", max_retries=max_retries
         )
         return self._build(ICalSubscription, resp)

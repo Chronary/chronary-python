@@ -8,6 +8,7 @@ from typing_extensions import NotRequired, Required, TypedDict
 
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
+from .._paths import path_segment
 from ..pagination import AsyncPager, ListResponse, SyncPager
 from .events import Event
 
@@ -200,7 +201,7 @@ class Calendars(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> Calendar:
-        resp = self._request("GET", f"{_CALENDARS_PATH}/{calendar_id}", max_retries=max_retries)
+        resp = self._request("GET", f"{_CALENDARS_PATH}/{path_segment(calendar_id)}", max_retries=max_retries)
         return self._build(Calendar, resp)
 
     def update(
@@ -226,7 +227,7 @@ class Calendars(SyncAPIResource):
         if default_reminders is not _UNSET:
             body["default_reminders"] = default_reminders
         resp = self._request(
-            "PATCH", f"{_CALENDARS_PATH}/{calendar_id}", json=body, max_retries=max_retries
+            "PATCH", f"{_CALENDARS_PATH}/{path_segment(calendar_id)}", json=body, max_retries=max_retries
         )
         return self._build(Calendar, resp)
 
@@ -236,7 +237,7 @@ class Calendars(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> None:
-        self._request("DELETE", f"{_CALENDARS_PATH}/{calendar_id}", max_retries=max_retries)
+        self._request("DELETE", f"{_CALENDARS_PATH}/{path_segment(calendar_id)}", max_retries=max_retries)
 
     def rotate_ical_token(
         self,
@@ -250,7 +251,7 @@ class Calendars(SyncAPIResource):
         to 5 minutes). Returns the calendar with its new ``ical_url``.
         Organization keys only.
         """
-        path = f"{_CALENDARS_PATH}/{calendar_id}/ical-token/rotate"
+        path = f"{_CALENDARS_PATH}/{path_segment(calendar_id)}/ical-token/rotate"
         resp = self._request("POST", path, max_retries=max_retries)
         return self._build(Calendar, resp)
 
@@ -260,7 +261,7 @@ class Calendars(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> CalendarContext:
-        path = f"{_CALENDARS_PATH}/{calendar_id}/context"
+        path = f"{_CALENDARS_PATH}/{path_segment(calendar_id)}/context"
         resp = self._request("GET", path, max_retries=max_retries)
         return self._build(CalendarContext, resp)
 
@@ -283,7 +284,7 @@ class Calendars(SyncAPIResource):
             body["working_hours"] = working_hours
         if timezone is not None:
             body["timezone"] = timezone
-        path = f"{_CALENDARS_PATH}/{calendar_id}/availability-rules"
+        path = f"{_CALENDARS_PATH}/{path_segment(calendar_id)}/availability-rules"
         resp = self._request("PUT", path, json=body, max_retries=max_retries)
         return self._build(AvailabilityRules, resp)
 
@@ -293,7 +294,7 @@ class Calendars(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> AvailabilityRules:
-        path = f"{_CALENDARS_PATH}/{calendar_id}/availability-rules"
+        path = f"{_CALENDARS_PATH}/{path_segment(calendar_id)}/availability-rules"
         resp = self._request("GET", path, max_retries=max_retries)
         return self._build(AvailabilityRules, resp)
 
@@ -303,7 +304,7 @@ class Calendars(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> None:
-        path = f"{_CALENDARS_PATH}/{calendar_id}/availability-rules"
+        path = f"{_CALENDARS_PATH}/{path_segment(calendar_id)}/availability-rules"
         self._request("DELETE", path, max_retries=max_retries)
 
 
@@ -376,7 +377,7 @@ class AsyncCalendars(AsyncAPIResource):
         max_retries: int | None = None,
     ) -> Calendar:
         resp = await self._request(
-            "GET", f"{_CALENDARS_PATH}/{calendar_id}", max_retries=max_retries
+            "GET", f"{_CALENDARS_PATH}/{path_segment(calendar_id)}", max_retries=max_retries
         )
         return self._build(Calendar, resp)
 
@@ -403,7 +404,7 @@ class AsyncCalendars(AsyncAPIResource):
         if default_reminders is not _UNSET:
             body["default_reminders"] = default_reminders
         resp = await self._request(
-            "PATCH", f"{_CALENDARS_PATH}/{calendar_id}", json=body, max_retries=max_retries
+            "PATCH", f"{_CALENDARS_PATH}/{path_segment(calendar_id)}", json=body, max_retries=max_retries
         )
         return self._build(Calendar, resp)
 
@@ -414,7 +415,7 @@ class AsyncCalendars(AsyncAPIResource):
         max_retries: int | None = None,
     ) -> None:
         await self._request(
-            "DELETE", f"{_CALENDARS_PATH}/{calendar_id}", max_retries=max_retries
+            "DELETE", f"{_CALENDARS_PATH}/{path_segment(calendar_id)}", max_retries=max_retries
         )
 
     async def rotate_ical_token(
@@ -429,7 +430,7 @@ class AsyncCalendars(AsyncAPIResource):
         to 5 minutes). Returns the calendar with its new ``ical_url``.
         Organization keys only.
         """
-        path = f"{_CALENDARS_PATH}/{calendar_id}/ical-token/rotate"
+        path = f"{_CALENDARS_PATH}/{path_segment(calendar_id)}/ical-token/rotate"
         resp = await self._request("POST", path, max_retries=max_retries)
         return self._build(Calendar, resp)
 
@@ -439,7 +440,7 @@ class AsyncCalendars(AsyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> CalendarContext:
-        path = f"{_CALENDARS_PATH}/{calendar_id}/context"
+        path = f"{_CALENDARS_PATH}/{path_segment(calendar_id)}/context"
         resp = await self._request("GET", path, max_retries=max_retries)
         return self._build(CalendarContext, resp)
 
@@ -462,7 +463,7 @@ class AsyncCalendars(AsyncAPIResource):
             body["working_hours"] = working_hours
         if timezone is not None:
             body["timezone"] = timezone
-        path = f"{_CALENDARS_PATH}/{calendar_id}/availability-rules"
+        path = f"{_CALENDARS_PATH}/{path_segment(calendar_id)}/availability-rules"
         resp = await self._request("PUT", path, json=body, max_retries=max_retries)
         return self._build(AvailabilityRules, resp)
 
@@ -472,7 +473,7 @@ class AsyncCalendars(AsyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> AvailabilityRules:
-        path = f"{_CALENDARS_PATH}/{calendar_id}/availability-rules"
+        path = f"{_CALENDARS_PATH}/{path_segment(calendar_id)}/availability-rules"
         resp = await self._request("GET", path, max_retries=max_retries)
         return self._build(AvailabilityRules, resp)
 
@@ -482,7 +483,7 @@ class AsyncCalendars(AsyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> None:
-        path = f"{_CALENDARS_PATH}/{calendar_id}/availability-rules"
+        path = f"{_CALENDARS_PATH}/{path_segment(calendar_id)}/availability-rules"
         await self._request("DELETE", path, max_retries=max_retries)
 
 
@@ -507,7 +508,7 @@ class AgentCalendars(SyncAPIResource):
         default_reminders: list[int] | None = None,
         max_retries: int | None = None,
     ) -> Calendar:
-        path = _AGENT_CALENDARS_PATH.format(agent_id=agent_id)
+        path = _AGENT_CALENDARS_PATH.format(agent_id=path_segment(agent_id))
         body: dict[str, Any] = {"name": name, "timezone": timezone}
         if agent_status is not None:
             body["agent_status"] = agent_status
@@ -526,7 +527,7 @@ class AgentCalendars(SyncAPIResource):
         offset: int | None = None,
         max_retries: int | None = None,
     ) -> SyncPager[Calendar]:
-        path = _AGENT_CALENDARS_PATH.format(agent_id=agent_id)
+        path = _AGENT_CALENDARS_PATH.format(agent_id=path_segment(agent_id))
         params: dict[str, Any] = {"limit": limit, "offset": offset}
         resp = self._request("GET", path, params=params, max_retries=max_retries)
         raw = resp.json()
@@ -565,7 +566,7 @@ class AsyncAgentCalendars(AsyncAPIResource):
         default_reminders: list[int] | None = None,
         max_retries: int | None = None,
     ) -> Calendar:
-        path = _AGENT_CALENDARS_PATH.format(agent_id=agent_id)
+        path = _AGENT_CALENDARS_PATH.format(agent_id=path_segment(agent_id))
         body: dict[str, Any] = {"name": name, "timezone": timezone}
         if agent_status is not None:
             body["agent_status"] = agent_status
@@ -584,7 +585,7 @@ class AsyncAgentCalendars(AsyncAPIResource):
         offset: int | None = None,
         max_retries: int | None = None,
     ) -> AsyncPager[Calendar]:
-        path = _AGENT_CALENDARS_PATH.format(agent_id=agent_id)
+        path = _AGENT_CALENDARS_PATH.format(agent_id=path_segment(agent_id))
         params: dict[str, Any] = {"limit": limit, "offset": offset}
         resp = await self._request("GET", path, params=params, max_retries=max_retries)
         raw = resp.json()

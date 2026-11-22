@@ -4,6 +4,7 @@ from typing import Any, Literal
 
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
+from .._paths import path_segment
 
 # ---------------------------------------------------------------------------
 # Response models
@@ -97,7 +98,7 @@ class Availability(SyncAPIResource):
                 Only pass one; sending both with different values is a 400.
             include_busy: Include busy blocks in the response.
         """
-        path = _AGENT_AVAIL_PATH.format(agent_id=agent_id)
+        path = _AGENT_AVAIL_PATH.format(agent_id=path_segment(agent_id))
         params: dict[str, Any] = {
             "start": start,
             "end": end,
@@ -132,7 +133,7 @@ class Availability(SyncAPIResource):
                 Only pass one; sending both with different values is a 400.
             include_busy: Include busy blocks in the response.
         """
-        path = _CAL_AVAIL_PATH.format(calendar_id=calendar_id)
+        path = _CAL_AVAIL_PATH.format(calendar_id=path_segment(calendar_id))
         params: dict[str, Any] = {
             "start": start,
             "end": end,
@@ -216,7 +217,7 @@ class AsyncAvailability(AsyncAPIResource):
                 Only pass one; sending both with different values is a 400.
             include_busy: Include busy blocks in the response.
         """
-        path = _AGENT_AVAIL_PATH.format(agent_id=agent_id)
+        path = _AGENT_AVAIL_PATH.format(agent_id=path_segment(agent_id))
         params: dict[str, Any] = {
             "start": start,
             "end": end,
@@ -251,7 +252,7 @@ class AsyncAvailability(AsyncAPIResource):
                 Only pass one; sending both with different values is a 400.
             include_busy: Include busy blocks in the response.
         """
-        path = _CAL_AVAIL_PATH.format(calendar_id=calendar_id)
+        path = _CAL_AVAIL_PATH.format(calendar_id=path_segment(calendar_id))
         params: dict[str, Any] = {
             "start": start,
             "end": end,

@@ -8,6 +8,7 @@ from typing_extensions import NotRequired, Required, TypedDict
 
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
+from .._paths import path_segment
 from ..pagination import AsyncPager, ListResponse, SyncPager
 
 # "resolving" is the brief state while a resolve creates the event; it returns
@@ -226,7 +227,7 @@ class Scheduling(SyncAPIResource):
         max_retries: int | None = None,
     ) -> Proposal:
         resp = self._request(
-            "GET", f"{_PROPOSALS_PATH}/{proposal_id}", max_retries=max_retries
+            "GET", f"{_PROPOSALS_PATH}/{path_segment(proposal_id)}", max_retries=max_retries
         )
         return self._build(Proposal, resp)
 
@@ -248,7 +249,7 @@ class Scheduling(SyncAPIResource):
             body["counter_slots"] = counter_slots
         if message is not None:
             body["message"] = message
-        path = f"{_PROPOSALS_PATH}/{proposal_id}/respond"
+        path = f"{_PROPOSALS_PATH}/{path_segment(proposal_id)}/respond"
         resp = self._request("POST", path, json=body, max_retries=max_retries)
         return self._build(RespondToProposalResult, resp)
 
@@ -258,7 +259,7 @@ class Scheduling(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> ResolveProposalResponse:
-        path = f"{_PROPOSALS_PATH}/{proposal_id}/resolve"
+        path = f"{_PROPOSALS_PATH}/{path_segment(proposal_id)}/resolve"
         resp = self._request("POST", path, max_retries=max_retries)
         return self._build(ResolveProposalResponse, resp)
 
@@ -268,7 +269,7 @@ class Scheduling(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> CancelProposalResponse:
-        path = f"{_PROPOSALS_PATH}/{proposal_id}/cancel"
+        path = f"{_PROPOSALS_PATH}/{path_segment(proposal_id)}/cancel"
         resp = self._request("POST", path, max_retries=max_retries)
         return self._build(CancelProposalResponse, resp)
 
@@ -353,7 +354,7 @@ class AsyncScheduling(AsyncAPIResource):
         max_retries: int | None = None,
     ) -> Proposal:
         resp = await self._request(
-            "GET", f"{_PROPOSALS_PATH}/{proposal_id}", max_retries=max_retries
+            "GET", f"{_PROPOSALS_PATH}/{path_segment(proposal_id)}", max_retries=max_retries
         )
         return self._build(Proposal, resp)
 
@@ -375,7 +376,7 @@ class AsyncScheduling(AsyncAPIResource):
             body["counter_slots"] = counter_slots
         if message is not None:
             body["message"] = message
-        path = f"{_PROPOSALS_PATH}/{proposal_id}/respond"
+        path = f"{_PROPOSALS_PATH}/{path_segment(proposal_id)}/respond"
         resp = await self._request("POST", path, json=body, max_retries=max_retries)
         return self._build(RespondToProposalResult, resp)
 
@@ -385,7 +386,7 @@ class AsyncScheduling(AsyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> ResolveProposalResponse:
-        path = f"{_PROPOSALS_PATH}/{proposal_id}/resolve"
+        path = f"{_PROPOSALS_PATH}/{path_segment(proposal_id)}/resolve"
         resp = await self._request("POST", path, max_retries=max_retries)
         return self._build(ResolveProposalResponse, resp)
 
@@ -395,6 +396,6 @@ class AsyncScheduling(AsyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> CancelProposalResponse:
-        path = f"{_PROPOSALS_PATH}/{proposal_id}/cancel"
+        path = f"{_PROPOSALS_PATH}/{path_segment(proposal_id)}/cancel"
         resp = await self._request("POST", path, max_retries=max_retries)
         return self._build(CancelProposalResponse, resp)

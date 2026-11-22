@@ -8,6 +8,7 @@ from typing_extensions import NotRequired, Required, TypedDict
 
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
+from .._paths import path_segment
 from ..pagination import AsyncPager, ListResponse, SyncPager
 
 if TYPE_CHECKING:
@@ -186,7 +187,7 @@ class Events(SyncAPIResource):
         daylight-saving changes, and BYDAY, the ``start_time`` match and a
         date-only UNTIL are read in that zone. Omit for UTC.
         """
-        path = _EVENTS_PATH.format(calendar_id=calendar_id)
+        path = _EVENTS_PATH.format(calendar_id=path_segment(calendar_id))
         body: dict[str, Any] = {
             "title": title,
             "start_time": start_time,
@@ -233,7 +234,7 @@ class Events(SyncAPIResource):
         ``original_start_time``); the API then requires both ``start_after``
         and ``start_before``, at most 366 days apart.
         """
-        path = _EVENTS_PATH.format(calendar_id=calendar_id)
+        path = _EVENTS_PATH.format(calendar_id=path_segment(calendar_id))
         params: dict[str, Any] = {
             "start_after": start_after,
             "start_before": start_before,
@@ -320,7 +321,7 @@ class Events(SyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> Event:
-        path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
+        path = f"{_EVENTS_PATH.format(calendar_id=path_segment(calendar_id))}/{path_segment(event_id)}"
         resp = self._request("GET", path, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -358,7 +359,7 @@ class Events(SyncAPIResource):
         an occurrence are removed and listed in ``Event.dropped_exdates``.
         Clearing the rule still clears them.
         """
-        path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
+        path = f"{_EVENTS_PATH.format(calendar_id=path_segment(calendar_id))}/{path_segment(event_id)}"
         body: dict[str, Any] = {}
         if title is not None:
             body["title"] = title
@@ -400,7 +401,7 @@ class Events(SyncAPIResource):
         returned. Raises 400 if the datetime is not an active occurrence, 409
         if the event is not a recurring series.
         """
-        path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
+        path = f"{_EVENTS_PATH.format(calendar_id=path_segment(calendar_id))}/{path_segment(event_id)}"
         params = {"occurrence_start": occurrence_start}
         resp = self._request("DELETE", path, params=params, max_retries=max_retries)
         if occurrence_start is not None:
@@ -414,7 +415,7 @@ class Events(SyncAPIResource):
         max_retries: int | None = None,
     ) -> Event:
         """Fetch an event by ID alone — the calendar is resolved internally."""
-        path = _EVENT_BY_ID_PATH.format(event_id=event_id)
+        path = _EVENT_BY_ID_PATH.format(event_id=path_segment(event_id))
         resp = self._request("GET", path, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -440,7 +441,7 @@ class Events(SyncAPIResource):
         rule. ``timezone`` takes explicit ``None`` to return the series to UTC
         — see :meth:`update`.
         """
-        path = _EVENT_BY_ID_PATH.format(event_id=event_id)
+        path = _EVENT_BY_ID_PATH.format(event_id=path_segment(event_id))
         body: dict[str, Any] = {}
         if title is not None:
             body["title"] = title
@@ -478,7 +479,7 @@ class Events(SyncAPIResource):
         of a recurring series and returns the updated master ``Event`` — see
         :meth:`delete`.
         """
-        path = _EVENT_BY_ID_PATH.format(event_id=event_id)
+        path = _EVENT_BY_ID_PATH.format(event_id=path_segment(event_id))
         params = {"occurrence_start": occurrence_start}
         resp = self._request("DELETE", path, params=params, max_retries=max_retries)
         if occurrence_start is not None:
@@ -492,7 +493,7 @@ class Events(SyncAPIResource):
         max_retries: int | None = None,
     ) -> Event:
         """Promote a held event (status='hold') to status='confirmed'."""
-        path = _EVENTS_CONFIRM_PATH.format(event_id=event_id)
+        path = _EVENTS_CONFIRM_PATH.format(event_id=path_segment(event_id))
         resp = self._request("PUT", path, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -503,7 +504,7 @@ class Events(SyncAPIResource):
         max_retries: int | None = None,
     ) -> Event:
         """Manually release a held event before its TTL, freeing the slot."""
-        path = _EVENTS_RELEASE_PATH.format(event_id=event_id)
+        path = _EVENTS_RELEASE_PATH.format(event_id=path_segment(event_id))
         resp = self._request("PUT", path, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -549,7 +550,7 @@ class AsyncEvents(AsyncAPIResource):
         daylight-saving changes, and BYDAY, the ``start_time`` match and a
         date-only UNTIL are read in that zone. Omit for UTC.
         """
-        path = _EVENTS_PATH.format(calendar_id=calendar_id)
+        path = _EVENTS_PATH.format(calendar_id=path_segment(calendar_id))
         body: dict[str, Any] = {
             "title": title,
             "start_time": start_time,
@@ -596,7 +597,7 @@ class AsyncEvents(AsyncAPIResource):
         ``original_start_time``); the API then requires both ``start_after``
         and ``start_before``, at most 366 days apart.
         """
-        path = _EVENTS_PATH.format(calendar_id=calendar_id)
+        path = _EVENTS_PATH.format(calendar_id=path_segment(calendar_id))
         params: dict[str, Any] = {
             "start_after": start_after,
             "start_before": start_before,
@@ -683,7 +684,7 @@ class AsyncEvents(AsyncAPIResource):
         *,
         max_retries: int | None = None,
     ) -> Event:
-        path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
+        path = f"{_EVENTS_PATH.format(calendar_id=path_segment(calendar_id))}/{path_segment(event_id)}"
         resp = await self._request("GET", path, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -721,7 +722,7 @@ class AsyncEvents(AsyncAPIResource):
         an occurrence are removed and listed in ``Event.dropped_exdates``.
         Clearing the rule still clears them.
         """
-        path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
+        path = f"{_EVENTS_PATH.format(calendar_id=path_segment(calendar_id))}/{path_segment(event_id)}"
         body: dict[str, Any] = {}
         if title is not None:
             body["title"] = title
@@ -763,7 +764,7 @@ class AsyncEvents(AsyncAPIResource):
         returned. Raises 400 if the datetime is not an active occurrence, 409
         if the event is not a recurring series.
         """
-        path = f"{_EVENTS_PATH.format(calendar_id=calendar_id)}/{event_id}"
+        path = f"{_EVENTS_PATH.format(calendar_id=path_segment(calendar_id))}/{path_segment(event_id)}"
         params = {"occurrence_start": occurrence_start}
         resp = await self._request("DELETE", path, params=params, max_retries=max_retries)
         if occurrence_start is not None:
@@ -777,7 +778,7 @@ class AsyncEvents(AsyncAPIResource):
         max_retries: int | None = None,
     ) -> Event:
         """Fetch an event by ID alone — the calendar is resolved internally."""
-        path = _EVENT_BY_ID_PATH.format(event_id=event_id)
+        path = _EVENT_BY_ID_PATH.format(event_id=path_segment(event_id))
         resp = await self._request("GET", path, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -803,7 +804,7 @@ class AsyncEvents(AsyncAPIResource):
         rule. ``timezone`` takes explicit ``None`` to return the series to UTC
         — see :meth:`update`.
         """
-        path = _EVENT_BY_ID_PATH.format(event_id=event_id)
+        path = _EVENT_BY_ID_PATH.format(event_id=path_segment(event_id))
         body: dict[str, Any] = {}
         if title is not None:
             body["title"] = title
@@ -841,7 +842,7 @@ class AsyncEvents(AsyncAPIResource):
         of a recurring series and returns the updated master ``Event`` — see
         :meth:`delete`.
         """
-        path = _EVENT_BY_ID_PATH.format(event_id=event_id)
+        path = _EVENT_BY_ID_PATH.format(event_id=path_segment(event_id))
         params = {"occurrence_start": occurrence_start}
         resp = await self._request("DELETE", path, params=params, max_retries=max_retries)
         if occurrence_start is not None:
@@ -855,7 +856,7 @@ class AsyncEvents(AsyncAPIResource):
         max_retries: int | None = None,
     ) -> Event:
         """Promote a held event (status='hold') to status='confirmed'."""
-        path = _EVENTS_CONFIRM_PATH.format(event_id=event_id)
+        path = _EVENTS_CONFIRM_PATH.format(event_id=path_segment(event_id))
         resp = await self._request("PUT", path, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -866,7 +867,7 @@ class AsyncEvents(AsyncAPIResource):
         max_retries: int | None = None,
     ) -> Event:
         """Manually release a held event before its TTL, freeing the slot."""
-        path = _EVENTS_RELEASE_PATH.format(event_id=event_id)
+        path = _EVENTS_RELEASE_PATH.format(event_id=path_segment(event_id))
         resp = await self._request("PUT", path, max_retries=max_retries)
         return self._build(Event, resp)
 
@@ -900,7 +901,7 @@ class AgentEvents(SyncAPIResource):
         instances; the API then requires both ``start_after`` and
         ``start_before``, at most 366 days apart.
         """
-        path = _AGENT_EVENTS_PATH.format(agent_id=agent_id)
+        path = _AGENT_EVENTS_PATH.format(agent_id=path_segment(agent_id))
         params: dict[str, Any] = {
             "start_after": start_after,
             "start_before": start_before,
@@ -956,7 +957,7 @@ class AsyncAgentEvents(AsyncAPIResource):
         instances; the API then requires both ``start_after`` and
         ``start_before``, at most 366 days apart.
         """
-        path = _AGENT_EVENTS_PATH.format(agent_id=agent_id)
+        path = _AGENT_EVENTS_PATH.format(agent_id=path_segment(agent_id))
         params: dict[str, Any] = {
             "start_after": start_after,
             "start_before": start_before,

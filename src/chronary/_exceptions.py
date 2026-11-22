@@ -10,6 +10,14 @@ class ChronaryError(Exception):
     """Base exception for all Chronary SDK errors."""
 
 
+class InvalidPathParameterError(ChronaryError, ValueError):
+    """An ID passed to a method can't be used as a URL path segment (#2519).
+
+    Raised before any request is sent, for an empty string, ``"."`` or ``".."``.
+    Subclasses ``ValueError`` too, since it is a bad argument.
+    """
+
+
 class APIError(ChronaryError):
     """Base class for API-related errors."""
 

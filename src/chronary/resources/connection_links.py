@@ -4,6 +4,7 @@ from typing import Any, Literal
 
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
+from .._paths import path_segment
 
 
 class ConnectionLink(ChronaryModel):
@@ -36,7 +37,7 @@ def _list_params(status: ConnectionLinkStatus | None, calendar_id: str | None, l
 
 class ConnectionLinks(SyncAPIResource):
     def create(self, calendar_id: str, *, capabilities: list[Literal["availability", "publishing"]], publication_policy: Literal["none", "confirmed", "confirmed_tentative"] = "none", max_retries: int | None = None) -> ConnectionLink:
-        resp = self._request("POST", f"/v1/calendars/{calendar_id}/connection-links", json={"capabilities": capabilities, "publication_policy": publication_policy}, max_retries=max_retries)
+        resp = self._request("POST", f"/v1/calendars/{path_segment(calendar_id)}/connection-links", json={"capabilities": capabilities, "publication_policy": publication_policy}, max_retries=max_retries)
         return ConnectionLink.model_validate(resp.json())
 
     def list(self, *, status: ConnectionLinkStatus | None = None, calendar_id: str | None = None, limit: int | None = None, max_retries: int | None = None) -> list[ConnectionLink]:
@@ -45,15 +46,15 @@ class ConnectionLinks(SyncAPIResource):
         return [ConnectionLink.model_validate(item) for item in resp.json()["data"]]
 
     def get(self, link_id: str, *, max_retries: int | None = None) -> ConnectionLink:
-        return ConnectionLink.model_validate(self._request("GET", f"/v1/connection-links/{link_id}", max_retries=max_retries).json())
+        return ConnectionLink.model_validate(self._request("GET", f"/v1/connection-links/{path_segment(link_id)}", max_retries=max_retries).json())
 
     def cancel(self, link_id: str, *, max_retries: int | None = None) -> None:
-        self._request("DELETE", f"/v1/connection-links/{link_id}", max_retries=max_retries)
+        self._request("DELETE", f"/v1/connection-links/{path_segment(link_id)}", max_retries=max_retries)
 
 
 class AsyncConnectionLinks(AsyncAPIResource):
     async def create(self, calendar_id: str, *, capabilities: list[Literal["availability", "publishing"]], publication_policy: Literal["none", "confirmed", "confirmed_tentative"] = "none", max_retries: int | None = None) -> ConnectionLink:
-        resp = await self._request("POST", f"/v1/calendars/{calendar_id}/connection-links", json={"capabilities": capabilities, "publication_policy": publication_policy}, max_retries=max_retries)
+        resp = await self._request("POST", f"/v1/calendars/{path_segment(calendar_id)}/connection-links", json={"capabilities": capabilities, "publication_policy": publication_policy}, max_retries=max_retries)
         return ConnectionLink.model_validate(resp.json())
 
     async def list(self, *, status: ConnectionLinkStatus | None = None, calendar_id: str | None = None, limit: int | None = None, max_retries: int | None = None) -> list[ConnectionLink]:
@@ -62,7 +63,7 @@ class AsyncConnectionLinks(AsyncAPIResource):
         return [ConnectionLink.model_validate(item) for item in resp.json()["data"]]
 
     async def get(self, link_id: str, *, max_retries: int | None = None) -> ConnectionLink:
-        return ConnectionLink.model_validate((await self._request("GET", f"/v1/connection-links/{link_id}", max_retries=max_retries)).json())
+        return ConnectionLink.model_validate((await self._request("GET", f"/v1/connection-links/{path_segment(link_id)}", max_retries=max_retries)).json())
 
     async def cancel(self, link_id: str, *, max_retries: int | None = None) -> None:
-        await self._request("DELETE", f"/v1/connection-links/{link_id}", max_retries=max_retries)
+        await self._request("DELETE", f"/v1/connection-links/{path_segment(link_id)}", max_retries=max_retries)

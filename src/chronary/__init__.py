@@ -8,6 +8,7 @@ from ._exceptions import (
     BadRequestError,
     ChronaryError,
     InternalServerError,
+    InvalidPathParameterError,
     NotFoundError,
     PermissionDeniedError,
     PlanRequiredError,
@@ -259,6 +260,7 @@ __all__ = [
     "WaitlistedOrg",
     # Errors
     "ChronaryError",
+    "InvalidPathParameterError",
     "APIError",
     "APIConnectionError",
     "APITimeoutError",

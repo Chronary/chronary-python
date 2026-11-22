@@ -2,6 +2,10 @@
 
 All notable changes to `chronary` (Python SDK) will be documented in this file starting with the soft-launch release.
 
+## 0.13.2 — unreleased
+
+- **Path parameters are encoded (#2519).** Every ID a method puts into the URL path is now quoted as one segment (`urllib.parse.quote(safe="")`), so a value such as `../agents/agt_1`, `whk_1#` or `evt_1?expand=all` can no longer turn `events.delete_by_id()` or `events.get_by_id()` into a call on another resource or add a query string. `""`, `"."` and `".."` are refused before any request is sent with the new `InvalidPathParameterError` (a `ChronaryError` and a `ValueError`). Real Chronary IDs are unaffected. Sync and async.
+
 ## 0.13.1 — unreleased
 
 - `scheduling.respond()` returns `RespondToProposalResult` (a `ProposalResponse` subclass) with `auto_resolved` and `auto_resolve_error`. When the last response's auto-resolve fails, the API now answers 200 with `auto_resolve_error` (`code`, `message`) instead of an error status, because the response was saved; `message` says what to do next (usually `scheduling.resolve()`). Don't respond again. New exports `RespondToProposalResult`, `AutoResolveError` and `AutoResolveErrorCode`. Sync and async (#2540).
