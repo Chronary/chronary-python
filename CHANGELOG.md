@@ -2,6 +2,10 @@
 
 All notable changes to `chronary` (Python SDK) will be documented in this file starting with the soft-launch release.
 
+## 0.13.3 — unreleased
+
+- `AuditActorType` gains `oauth_app`: an app the organization connected to the hosted MCP server by signing in, such as Claude. Its audit entries have `actor_id` set to the connection id and `actor_label` to the app's name, and `audit_log.list(actor_type="oauth_app")` filters by it. Sync and async (#2254).
+
 ## 0.13.2 — unreleased
 
 - **Path parameters are encoded (#2519).** Every ID a method puts into the URL path is now quoted as one segment (`urllib.parse.quote(safe="")`), so a value such as `../agents/agt_1`, `whk_1#` or `evt_1?expand=all` can no longer turn `events.delete_by_id()` or `events.get_by_id()` into a call on another resource or add a query string. `""`, `"."` and `".."` are refused before any request is sent with the new `InvalidPathParameterError` (a `ChronaryError` and a `ValueError`). Real Chronary IDs are unaffected. Sync and async.

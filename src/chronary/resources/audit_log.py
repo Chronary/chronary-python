@@ -10,8 +10,9 @@ from .._resource import AsyncAPIResource, SyncAPIResource
 # ---------------------------------------------------------------------------
 
 #: Who acted: a console ``session``, the Organization key (``org_key``), an
-#: Agent key (``agent_key``), or Chronary itself (``system``).
-AuditActorType = Literal["session", "org_key", "agent_key", "system"]
+#: Agent key (``agent_key``), an app connected to the hosted MCP server by
+#: signing in such as Claude (``oauth_app``), or Chronary itself (``system``).
+AuditActorType = Literal["session", "org_key", "agent_key", "oauth_app", "system"]
 
 #: Response status class filter.
 AuditStatusClass = Literal["2xx", "3xx", "4xx", "5xx"]
@@ -37,11 +38,12 @@ class AuditLogEntry(ChronaryModel):
     id: str
     action: str
     actor_key_prefix: Optional[str] = None
-    #: ``session``, ``org_key``, ``agent_key`` or ``system``; None on older
+    #: ``session``, ``org_key``, ``agent_key``, ``oauth_app`` or ``system``; None on older
     #: entries that could not be attributed. Kept as ``str`` so a new actor
     #: type never breaks parsing.
     actor_type: Optional[str] = None
-    #: API key id for a key, the organization id for a console session.
+    #: API key id for a key, the organization id for a console session, the
+    #: connection id for a connected app (``oauth_app``).
     actor_id: Optional[str] = None
     #: Key label (or key prefix), session email, or ``Chronary``.
     actor_label: Optional[str] = None
@@ -137,9 +139,10 @@ class AuditLog(SyncAPIResource):
                 are matched by their current names.
             actor_key_prefix: Filter by the first 20 chars of the actor key.
             actor_type: Filter by who acted: ``session``, ``org_key``,
-                ``agent_key`` or ``system``.
-            actor_id: Filter by actor id (an API key id, or the organization
-                id for console sessions).
+                ``agent_key``, ``oauth_app`` or ``system``.
+            actor_id: Filter by actor id (an API key id, the organization
+                id for console sessions, or the connection id for
+                ``oauth_app``).
             request_id: Filter by the request id of the original call.
             resource: Filter by an entity id the request touched, or a bare
                 id prefix such as ``cal_``.
