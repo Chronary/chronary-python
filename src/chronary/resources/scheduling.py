@@ -14,6 +14,14 @@ from ..pagination import AsyncPager, ListResponse, SyncPager
 # to "pending" if the resolve fails.
 ProposalStatus = Literal["pending", "resolving", "confirmed", "expired", "cancelled"]
 ProposalResponseAction = Literal["accept", "decline", "counter"]
+AutoResolveErrorCode = Literal[
+    "event_quota_exceeded",
+    "calendar_not_found",
+    "agent_inactive",
+    "conflict",
+    "no_valid_slot",
+    "resolve_failed",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -41,6 +49,26 @@ class ProposalResponse(ChronaryModel):
     counter_slots: list[ProposalSlot] | None = None
     message: str | None = None
     created_at: datetime
+
+
+class AutoResolveError(ChronaryModel):
+    """Why a respond's auto-resolve failed, and what to do next."""
+
+    code: AutoResolveErrorCode
+    message: str
+
+
+class RespondToProposalResult(ProposalResponse):
+    """The result of ``scheduling.respond()``: the saved response plus the auto-resolve outcome.
+
+    ``auto_resolve_error`` is set when this response was the last one but the
+    auto-resolve failed. The response is still saved; its ``message`` says what
+    to do next (usually: ``scheduling.resolve()`` once the cause is fixed). Do
+    not respond again.
+    """
+
+    auto_resolved: Literal["confirmed", "cancelled"] | None = None
+    auto_resolve_error: AutoResolveError | None = None
 
 
 class ProposalSummary(ChronaryModel):
@@ -212,7 +240,7 @@ class Scheduling(SyncAPIResource):
         counter_slots: list[ProposalSlotParams] | None = None,
         message: str | None = None,
         max_retries: int | None = None,
-    ) -> ProposalResponse:
+    ) -> RespondToProposalResult:
         body: dict[str, Any] = {"agent_id": agent_id, "response": response}
         if selected_slot_id is not None:
             body["selected_slot_id"] = selected_slot_id
@@ -222,7 +250,7 @@ class Scheduling(SyncAPIResource):
             body["message"] = message
         path = f"{_PROPOSALS_PATH}/{proposal_id}/respond"
         resp = self._request("POST", path, json=body, max_retries=max_retries)
-        return self._build(ProposalResponse, resp)
+        return self._build(RespondToProposalResult, resp)
 
     def resolve(
         self,
@@ -339,7 +367,7 @@ class AsyncScheduling(AsyncAPIResource):
         counter_slots: list[ProposalSlotParams] | None = None,
         message: str | None = None,
         max_retries: int | None = None,
-    ) -> ProposalResponse:
+    ) -> RespondToProposalResult:
         body: dict[str, Any] = {"agent_id": agent_id, "response": response}
         if selected_slot_id is not None:
             body["selected_slot_id"] = selected_slot_id
@@ -349,7 +377,7 @@ class AsyncScheduling(AsyncAPIResource):
             body["message"] = message
         path = f"{_PROPOSALS_PATH}/{proposal_id}/respond"
         resp = await self._request("POST", path, json=body, max_retries=max_retries)
-        return self._build(ProposalResponse, resp)
+        return self._build(RespondToProposalResult, resp)
 
     async def resolve(
         self,

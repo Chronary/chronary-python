@@ -90,6 +90,8 @@ from .resources.keys import CreatedScopedApiKey, ScopedApiKey, ScopedApiKeyCreat
 from .resources.connection_links import ConnectionLink
 from .resources.plans import Plan, PlanId, PlanLimits, PlansListResponse
 from .resources.scheduling import (
+    AutoResolveError,
+    AutoResolveErrorCode,
     CancelProposalResponse,
     Proposal,
     ProposalCreateParams,
@@ -102,6 +104,7 @@ from .resources.scheduling import (
     ProposalStatus,
     ProposalSummary,
     ResolveProposalResponse,
+    RespondToProposalResult,
 )
 from .resources.terms import AcceptedTerms, AcceptTermsParams
 from .resources.usage import (
@@ -203,6 +206,9 @@ __all__ = [
     "ProposalSummary",
     "ProposalSlot",
     "ProposalResponse",
+    "RespondToProposalResult",
+    "AutoResolveError",
+    "AutoResolveErrorCode",
     "ProposalStatus",
     "ProposalResponseAction",
     "ProposalCreateParams",

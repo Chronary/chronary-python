@@ -2,6 +2,10 @@
 
 All notable changes to `chronary` (Python SDK) will be documented in this file starting with the soft-launch release.
 
+## 0.13.1 — unreleased
+
+- `scheduling.respond()` returns `RespondToProposalResult` (a `ProposalResponse` subclass) with `auto_resolved` and `auto_resolve_error`. When the last response's auto-resolve fails, the API now answers 200 with `auto_resolve_error` (`code`, `message`) instead of an error status, because the response was saved; `message` says what to do next (usually `scheduling.resolve()`). Don't respond again. New exports `RespondToProposalResult`, `AutoResolveError` and `AutoResolveErrorCode`. Sync and async (#2540).
+
 ## 0.13.0 — 2026-11-17
 
 - `client.agent_auth.sign_up_anonymous(agent_name=..., tos_version=..., source=None)` calls `POST /v1/agent/sign-up/anonymous`: a claimable organization with no email. Returns `AgentSignUpAnonymousResponse` with `api_key` (works at once, Sandbox limits), a one-time `claim_url` for the person who should own the calendar, and `expires_at` (72 hours; unclaimed, the org and its data are deleted). Sync and async (#2335).

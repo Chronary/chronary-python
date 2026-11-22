@@ -11,6 +11,7 @@ from chronary import (
     ProposalResponse,
     ProposalSummary,
     ResolveProposalResponse,
+    RespondToProposalResult,
 )
 from chronary.pagination import AsyncPager, SyncPager
 
@@ -117,6 +118,31 @@ class TestSyncScheduling:
             )
             assert isinstance(resp, ProposalResponse)
             assert resp.response == "accept"
+
+    @respx.mock
+    def test_respond_reports_auto_resolve_error(self) -> None:
+        # #2540: the response is saved even when the auto-resolve fails.
+        respx.post(f"{BASE}/v1/scheduling/proposals/spr_abc123/respond").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    **RESPONSE_DATA,
+                    "auto_resolved": None,
+                    "auto_resolve_error": {
+                        "code": "event_quota_exceeded",
+                        "message": "The response was saved, but the proposal was not resolved",
+                    },
+                },
+            )
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            resp = client.scheduling.respond(
+                "spr_abc123", agent_id="agt_a", response="accept", selected_slot_id="slt_1"
+            )
+            assert isinstance(resp, RespondToProposalResult)
+            assert resp.auto_resolved is None
+            assert resp.auto_resolve_error is not None
+            assert resp.auto_resolve_error.code == "event_quota_exceeded"
 
     @respx.mock
     def test_resolve(self) -> None:
