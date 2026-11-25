@@ -8,6 +8,7 @@ from chronary import (
     AgentSignUpAnonymousResponse,
     AgentSignUpResponse,
     AgentVerifyResponse,
+    APITimeoutError,
     AsyncChronary,
     BadRequestError,
     Chronary,
@@ -195,8 +196,104 @@ class TestSyncAgentAuthAnonymous:
         ):
             client.agent_auth.sign_up_anonymous(agent_name="P", tos_version="v")
 
+    # #2690: the anonymous sign-up POST is not idempotent (the server skips the
+    # Idempotency-Key check on public paths), so a retry after a lost response
+    # creates a second claimable org. The SDK sends it once by default.
+    @respx.mock
+    def test_sign_up_anonymous_does_not_retry_500(self) -> None:
+        route = respx.post(f"{BASE}/v1/agent/sign-up/anonymous").mock(
+            side_effect=[
+                httpx.Response(500, json={"error": {"type": "api_error", "message": "x"}}),
+                httpx.Response(201, json=ANON_RESPONSE),
+            ]
+        )
+        with Chronary(api_key=None, base_url=BASE) as client, pytest.raises(ChronaryError):
+            client.agent_auth.sign_up_anonymous(agent_name="P", tos_version="v")
+        assert route.call_count == 1
+
+    @respx.mock
+    def test_sign_up_anonymous_does_not_retry_read_timeout(self) -> None:
+        route = respx.post(f"{BASE}/v1/agent/sign-up/anonymous").mock(
+            side_effect=[
+                httpx.ReadTimeout("Timed out"),
+                httpx.Response(201, json=ANON_RESPONSE),
+            ]
+        )
+        with Chronary(api_key=None, base_url=BASE) as client, pytest.raises(APITimeoutError):
+            client.agent_auth.sign_up_anonymous(agent_name="P", tos_version="v")
+        assert route.call_count == 1
+
+    @respx.mock
+    def test_sign_up_anonymous_explicit_max_retries_still_retries(self) -> None:
+        route = respx.post(f"{BASE}/v1/agent/sign-up/anonymous").mock(
+            side_effect=[
+                httpx.Response(503, json={"error": {"type": "api_error", "message": "x"}}),
+                httpx.Response(201, json=ANON_RESPONSE),
+            ]
+        )
+        with Chronary(api_key=None, base_url=BASE) as client:
+            result = client.agent_auth.sign_up_anonymous(
+                agent_name="P", tos_version="v", max_retries=1
+            )
+        assert result.agent_id == "agt_anon"
+        assert route.call_count == 2
+
+    @respx.mock
+    def test_sign_up_anonymous_max_retries_none_means_no_retry(self) -> None:
+        route = respx.post(f"{BASE}/v1/agent/sign-up/anonymous").mock(
+            side_effect=[
+                httpx.Response(500, json={"error": {"type": "api_error", "message": "x"}}),
+                httpx.Response(201, json=ANON_RESPONSE),
+            ]
+        )
+        with Chronary(api_key=None, base_url=BASE) as client, pytest.raises(ChronaryError):
+            client.agent_auth.sign_up_anonymous(agent_name="P", tos_version="v", max_retries=None)
+        assert route.call_count == 1
+
 
 class TestAsyncAgentAuth:
+    @respx.mock
+    async def test_sign_up_anonymous_max_retries_none_means_no_retry(self) -> None:
+        route = respx.post(f"{BASE}/v1/agent/sign-up/anonymous").mock(
+            side_effect=[
+                httpx.Response(500, json={"error": {"type": "api_error", "message": "x"}}),
+                httpx.Response(201, json=ANON_RESPONSE),
+            ]
+        )
+        async with AsyncChronary(api_key=None, base_url=BASE) as client:
+            with pytest.raises(ChronaryError):
+                await client.agent_auth.sign_up_anonymous(
+                    agent_name="P", tos_version="v", max_retries=None
+                )
+        assert route.call_count == 1
+
+    @respx.mock
+    async def test_sign_up_anonymous_does_not_retry_500(self) -> None:
+        # #2690, async counterpart.
+        route = respx.post(f"{BASE}/v1/agent/sign-up/anonymous").mock(
+            side_effect=[
+                httpx.Response(500, json={"error": {"type": "api_error", "message": "x"}}),
+                httpx.Response(201, json=ANON_RESPONSE),
+            ]
+        )
+        async with AsyncChronary(api_key=None, base_url=BASE) as client:
+            with pytest.raises(ChronaryError):
+                await client.agent_auth.sign_up_anonymous(agent_name="P", tos_version="v")
+        assert route.call_count == 1
+
+    @respx.mock
+    async def test_sign_up_anonymous_does_not_retry_read_timeout(self) -> None:
+        route = respx.post(f"{BASE}/v1/agent/sign-up/anonymous").mock(
+            side_effect=[
+                httpx.ReadTimeout("Timed out"),
+                httpx.Response(201, json=ANON_RESPONSE),
+            ]
+        )
+        async with AsyncChronary(api_key=None, base_url=BASE) as client:
+            with pytest.raises(APITimeoutError):
+                await client.agent_auth.sign_up_anonymous(agent_name="P", tos_version="v")
+        assert route.call_count == 1
+
     @respx.mock
     async def test_sign_up_anonymous(self) -> None:
         respx.post(f"{BASE}/v1/agent/sign-up/anonymous").mock(

@@ -9,7 +9,7 @@ from typing_extensions import NotRequired, Required, TypedDict
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
 from .._paths import path_segment
-from ..pagination import AsyncPager, ListResponse, SyncPager
+from ..pagination import AsyncPager, SyncPager, parse_list_response
 from .availability import AsyncAvailability, Availability
 from .calendars import AgentCalendars, AsyncAgentCalendars
 from .events import AgentEvents, AsyncAgentEvents
@@ -146,6 +146,7 @@ class Agents(SyncAPIResource):
         include_counts: bool | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        cursor: str | None = None,
         max_retries: int | None = None,
     ) -> SyncPager[Agent]:
         params: dict[str, Any] = {
@@ -157,15 +158,11 @@ class Agents(SyncAPIResource):
             "include_counts": _bool_param(include_counts),
             "limit": limit,
             "offset": offset,
+            "cursor": cursor,
         }
         resp = self._request("GET", _AGENTS_PATH, params=params, max_retries=max_retries)
         raw = resp.json()
-        list_resp = ListResponse[Agent](
-            data=[Agent.model_validate(item) for item in raw["data"]],
-            total=raw["total"],
-            limit=raw["limit"],
-            offset=raw["offset"],
-        )
+        list_resp = parse_list_response(Agent, raw)
         return SyncPager(
             list_resp,
             client=self._client,
@@ -288,6 +285,7 @@ class AsyncAgents(AsyncAPIResource):
         include_counts: bool | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        cursor: str | None = None,
         max_retries: int | None = None,
     ) -> AsyncPager[Agent]:
         params: dict[str, Any] = {
@@ -299,17 +297,13 @@ class AsyncAgents(AsyncAPIResource):
             "include_counts": _bool_param(include_counts),
             "limit": limit,
             "offset": offset,
+            "cursor": cursor,
         }
         resp = await self._request(
             "GET", _AGENTS_PATH, params=params, max_retries=max_retries
         )
         raw = resp.json()
-        list_resp = ListResponse[Agent](
-            data=[Agent.model_validate(item) for item in raw["data"]],
-            total=raw["total"],
-            limit=raw["limit"],
-            offset=raw["offset"],
-        )
+        list_resp = parse_list_response(Agent, raw)
         return AsyncPager(
             list_resp,
             client=self._client,

@@ -9,7 +9,7 @@ from typing_extensions import NotRequired, Required, TypedDict
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
 from .._paths import path_segment
-from ..pagination import AsyncPager, ListResponse, SyncPager
+from ..pagination import AsyncPager, ListResponse, SyncPager, parse_list_response
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -275,6 +275,7 @@ class Events(SyncAPIResource):
         expand: bool | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        cursor: str | None = None,
         max_retries: int | None = None,
     ) -> SyncPager[Event]:
         """List events across all of the organization's calendars (``GET /v1/events``).
@@ -283,6 +284,9 @@ class Events(SyncAPIResource):
         calendars. ``calendar_id`` accepts one id or a list (at most 50).
         ``q`` searches titles case-insensitively and requires ``start_after``
         and ``start_before`` at most 31 days apart. ``limit`` is at most 100.
+        ``cursor`` (a previous page's ``next_cursor``) starts the list there;
+        ``auto_paging_iter()`` follows ``next_cursor`` by itself, so it is not
+        limited by the API's 10,000-row ``offset`` cap.
         """
         params: dict[str, Any] = {
             # A list goes over the wire as repeated calendar_id parameters.
@@ -295,16 +299,12 @@ class Events(SyncAPIResource):
             "q": q,
             "limit": limit,
             "offset": offset,
+            "cursor": cursor,
             "expand": None if expand is None else ("true" if expand else "false"),
         }
         resp = self._request("GET", _ORG_EVENTS_PATH, params=params, max_retries=max_retries)
         raw = resp.json()
-        list_resp = ListResponse[Event](
-            data=[Event.model_validate(item) for item in raw["data"]],
-            total=raw["total"],
-            limit=raw["limit"],
-            offset=raw["offset"],
-        )
+        list_resp = parse_list_response(Event, raw)
         return SyncPager(
             list_resp,
             client=self._client,
@@ -638,6 +638,7 @@ class AsyncEvents(AsyncAPIResource):
         expand: bool | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        cursor: str | None = None,
         max_retries: int | None = None,
     ) -> AsyncPager[Event]:
         """List events across all of the organization's calendars (``GET /v1/events``).
@@ -646,6 +647,9 @@ class AsyncEvents(AsyncAPIResource):
         calendars. ``calendar_id`` accepts one id or a list (at most 50).
         ``q`` searches titles case-insensitively and requires ``start_after``
         and ``start_before`` at most 31 days apart. ``limit`` is at most 100.
+        ``cursor`` (a previous page's ``next_cursor``) starts the list there;
+        ``auto_paging_iter()`` follows ``next_cursor`` by itself, so it is not
+        limited by the API's 10,000-row ``offset`` cap.
         """
         params: dict[str, Any] = {
             # A list goes over the wire as repeated calendar_id parameters.
@@ -658,16 +662,12 @@ class AsyncEvents(AsyncAPIResource):
             "q": q,
             "limit": limit,
             "offset": offset,
+            "cursor": cursor,
             "expand": None if expand is None else ("true" if expand else "false"),
         }
         resp = await self._request("GET", _ORG_EVENTS_PATH, params=params, max_retries=max_retries)
         raw = resp.json()
-        list_resp = ListResponse[Event](
-            data=[Event.model_validate(item) for item in raw["data"]],
-            total=raw["total"],
-            limit=raw["limit"],
-            offset=raw["offset"],
-        )
+        list_resp = parse_list_response(Event, raw)
         return AsyncPager(
             list_resp,
             client=self._client,

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+from email.utils import format_datetime
 from unittest.mock import patch
 
 import httpx
@@ -7,8 +9,14 @@ import pytest
 import respx
 
 from chronary import AsyncChronary, Chronary, InternalServerError
-from chronary._base_client import _sleep_time
-from chronary._exceptions import APIConnectionError, APITimeoutError, QuotaExceededError
+from chronary._base_client import _retry_after_beyond_cap, _sleep_time
+from chronary._exceptions import (
+    APIConnectionError,
+    APIStatusError,
+    APITimeoutError,
+    QuotaExceededError,
+    RateLimitError,
+)
 
 BASE = "https://api.chronary.ai"
 
@@ -255,9 +263,10 @@ class TestQuotaExceededIsNotRetried:
         sleep.assert_called_once_with(2.0)
 
     @respx.mock
-    def test_long_rate_limit_retry_after_is_clamped(self) -> None:
+    def test_long_rate_limit_retry_after_is_not_retried(self) -> None:
+        # #2558: a Retry-After beyond the 60 s cap is not clamped and retried.
         error_body = {"error": {"type": "rate_limit_error", "message": "Too many requests"}}
-        respx.get(f"{BASE}/v1/agents/agt_abc123").mock(
+        route = respx.get(f"{BASE}/v1/agents/agt_abc123").mock(
             side_effect=[
                 httpx.Response(429, json=error_body, headers={"Retry-After": "1700000"}),
                 httpx.Response(200, json=AGENT_DATA),
@@ -266,9 +275,11 @@ class TestQuotaExceededIsNotRetried:
         with (
             Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=1) as client,
             patch("chronary._base_client.time.sleep") as sleep,
+            pytest.raises(RateLimitError),
         ):
             client.agents.get("agt_abc123")
-        sleep.assert_called_once_with(60.0)
+        assert route.call_count == 1
+        sleep.assert_not_called()
 
     @pytest.mark.asyncio
     @respx.mock
@@ -388,3 +399,124 @@ class TestSyncIdempotency:
             pytest.raises(APIConnectionError),
         ):
             client.agents.get("agt_abc123")
+
+
+COOLDOWN_BODY = {
+    "error": {"type": "rate_limit_error", "message": "A sync for this feed started recently."}
+}
+CAPACITY_BODY = {
+    "error": {"type": "anonymous_signup_capacity", "message": "Sign-up capacity reached for today."}
+}
+SYNC_URL = f"{BASE}/v1/ical-subscriptions/ics_1/sync"
+
+
+class TestRetryAfterBeyondCap:
+    """bughunt-BH-057 (#2558): a refusal whose Retry-After is beyond the 60 s
+    retry cap raises at once instead of sleeping 60 s + 60 s and failing anyway."""
+
+    @respx.mock
+    def test_ical_sync_cooldown_429_is_not_retried(self) -> None:
+        route = respx.post(SYNC_URL).mock(
+            side_effect=[
+                httpx.Response(429, json=COOLDOWN_BODY, headers={"Retry-After": "900"}),
+                httpx.Response(429, json=COOLDOWN_BODY, headers={"Retry-After": "840"}),
+                httpx.Response(429, json=COOLDOWN_BODY, headers={"Retry-After": "780"}),
+            ]
+        )
+        with (
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=2) as client,
+            patch("chronary._base_client.time.sleep") as sleep,
+            pytest.raises(RateLimitError),
+        ):
+            client.ical_subscriptions.sync("ics_1")
+        assert route.call_count == 1
+        sleep.assert_not_called()
+
+    @respx.mock
+    def test_daily_cap_503_is_not_retried(self) -> None:
+        route = respx.get(f"{BASE}/v1/agents/agt_abc123").mock(
+            side_effect=[
+                httpx.Response(503, json=CAPACITY_BODY, headers={"Retry-After": "36000"}),
+                httpx.Response(200, json=AGENT_DATA),
+            ]
+        )
+        with (
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=2) as client,
+            patch("chronary._base_client.time.sleep") as sleep,
+            pytest.raises(APIStatusError) as exc_info,
+        ):
+            client.agents.get("agt_abc123")
+        assert exc_info.value.status_code == 503
+        assert route.call_count == 1
+        sleep.assert_not_called()
+
+    @respx.mock
+    def test_retry_after_of_exactly_60_is_retried(self) -> None:
+        route = respx.post(SYNC_URL).mock(
+            side_effect=[
+                httpx.Response(429, json=COOLDOWN_BODY, headers={"Retry-After": "60"}),
+                httpx.Response(200, json={"status": "syncing"}),
+            ]
+        )
+        with (
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=1) as client,
+            patch("chronary._base_client.time.sleep") as sleep,
+        ):
+            client.ical_subscriptions.sync("ics_1")
+        assert route.call_count == 2
+        sleep.assert_called_once_with(60.0)
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_async_ical_sync_cooldown_429_is_not_retried(self) -> None:
+        route = respx.post(SYNC_URL).mock(
+            side_effect=[
+                httpx.Response(429, json=COOLDOWN_BODY, headers={"Retry-After": "900"}),
+                httpx.Response(429, json=COOLDOWN_BODY, headers={"Retry-After": "840"}),
+                httpx.Response(429, json=COOLDOWN_BODY, headers={"Retry-After": "780"}),
+            ]
+        )
+        async with AsyncChronary(api_key="chr_sk_x", base_url=BASE, max_retries=2) as client:
+            with (
+                patch("chronary._base_client._async_sleep") as sleep,
+                pytest.raises(RateLimitError),
+            ):
+                await client.ical_subscriptions.sync("ics_1")
+        assert route.call_count == 1
+        sleep.assert_not_called()
+
+    def test_beyond_cap_helper(self) -> None:
+        assert _retry_after_beyond_cap("61") is True
+        assert _retry_after_beyond_cap("60") is False
+        assert _retry_after_beyond_cap(None) is False
+        assert _retry_after_beyond_cap("not-a-number") is False
+        assert _retry_after_beyond_cap("nan") is False
+        assert _retry_after_beyond_cap("Wed, 21 Oct 2099 07:28:00 GMT") is True
+
+
+class TestDateRetryAfter:
+    """Review of #2748: a date-form Retry-After within the cap is waited out."""
+
+    def test_sleep_time_reads_an_http_date(self) -> None:
+        when = datetime.now(timezone.utc) + timedelta(seconds=30)
+        slept = _sleep_time(0, format_datetime(when, usegmt=True))
+        assert 28.0 <= slept <= 30.0
+
+    @respx.mock
+    def test_date_30s_ahead_is_retried_after_that_wait(self) -> None:
+        when = datetime.now(timezone.utc) + timedelta(seconds=30)
+        retry_after = format_datetime(when, usegmt=True)
+        route = respx.post(SYNC_URL).mock(
+            side_effect=[
+                httpx.Response(429, json=COOLDOWN_BODY, headers={"Retry-After": retry_after}),
+                httpx.Response(200, json={"status": "syncing"}),
+            ]
+        )
+        with (
+            Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=1) as client,
+            patch("chronary._base_client.time.sleep") as sleep,
+        ):
+            client.ical_subscriptions.sync("ics_1")
+        assert route.call_count == 2
+        (slept,), _ = sleep.call_args
+        assert 28.0 <= slept <= 30.0

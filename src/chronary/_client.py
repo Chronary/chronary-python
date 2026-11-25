@@ -77,7 +77,7 @@ class Chronary(SyncAPIClient):
         api_key: str | None = None,
         agent_key: str | None = None,
         base_url: str = "https://api.chronary.ai",
-        timeout: float = 60.0,
+        timeout: float | None = None,
         max_retries: int = 2,
         httpx_client: httpx.Client | None = None,
     ) -> None:
@@ -259,7 +259,7 @@ class AsyncChronary(AsyncAPIClient):
         api_key: str | None = None,
         agent_key: str | None = None,
         base_url: str = "https://api.chronary.ai",
-        timeout: float = 60.0,
+        timeout: float | None = None,
         max_retries: int = 2,
         httpx_client: httpx.AsyncClient | None = None,
     ) -> None:

@@ -9,7 +9,7 @@ from typing_extensions import NotRequired, Required, TypedDict
 from .._models import ChronaryModel
 from .._resource import AsyncAPIResource, SyncAPIResource
 from .._paths import path_segment
-from ..pagination import AsyncPager, ListResponse, SyncPager
+from ..pagination import AsyncPager, SyncPager, parse_list_response
 from .events import Event
 
 AgentStatus = Literal["idle", "working", "waiting", "error"]
@@ -170,6 +170,7 @@ class Calendars(SyncAPIResource):
         q: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        cursor: str | None = None,
         max_retries: int | None = None,
     ) -> SyncPager[Calendar]:
         params: dict[str, Any] = {
@@ -177,15 +178,11 @@ class Calendars(SyncAPIResource):
             "q": q,
             "limit": limit,
             "offset": offset,
+            "cursor": cursor,
         }
         resp = self._request("GET", _CALENDARS_PATH, params=params, max_retries=max_retries)
         raw = resp.json()
-        list_resp = ListResponse[Calendar](
-            data=[Calendar.model_validate(item) for item in raw["data"]],
-            total=raw["total"],
-            limit=raw["limit"],
-            offset=raw["offset"],
-        )
+        list_resp = parse_list_response(Calendar, raw)
         return SyncPager(
             list_resp,
             client=self._client,
@@ -343,6 +340,7 @@ class AsyncCalendars(AsyncAPIResource):
         q: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        cursor: str | None = None,
         max_retries: int | None = None,
     ) -> AsyncPager[Calendar]:
         params: dict[str, Any] = {
@@ -350,17 +348,13 @@ class AsyncCalendars(AsyncAPIResource):
             "q": q,
             "limit": limit,
             "offset": offset,
+            "cursor": cursor,
         }
         resp = await self._request(
             "GET", _CALENDARS_PATH, params=params, max_retries=max_retries
         )
         raw = resp.json()
-        list_resp = ListResponse[Calendar](
-            data=[Calendar.model_validate(item) for item in raw["data"]],
-            total=raw["total"],
-            limit=raw["limit"],
-            offset=raw["offset"],
-        )
+        list_resp = parse_list_response(Calendar, raw)
         return AsyncPager(
             list_resp,
             client=self._client,
@@ -525,18 +519,14 @@ class AgentCalendars(SyncAPIResource):
         *,
         limit: int | None = None,
         offset: int | None = None,
+        cursor: str | None = None,
         max_retries: int | None = None,
     ) -> SyncPager[Calendar]:
         path = _AGENT_CALENDARS_PATH.format(agent_id=path_segment(agent_id))
-        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        params: dict[str, Any] = {"limit": limit, "offset": offset, "cursor": cursor}
         resp = self._request("GET", path, params=params, max_retries=max_retries)
         raw = resp.json()
-        list_resp = ListResponse[Calendar](
-            data=[Calendar.model_validate(item) for item in raw["data"]],
-            total=raw["total"],
-            limit=raw["limit"],
-            offset=raw["offset"],
-        )
+        list_resp = parse_list_response(Calendar, raw)
         return SyncPager(
             list_resp,
             client=self._client,
@@ -583,18 +573,14 @@ class AsyncAgentCalendars(AsyncAPIResource):
         *,
         limit: int | None = None,
         offset: int | None = None,
+        cursor: str | None = None,
         max_retries: int | None = None,
     ) -> AsyncPager[Calendar]:
         path = _AGENT_CALENDARS_PATH.format(agent_id=path_segment(agent_id))
-        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        params: dict[str, Any] = {"limit": limit, "offset": offset, "cursor": cursor}
         resp = await self._request("GET", path, params=params, max_retries=max_retries)
         raw = resp.json()
-        list_resp = ListResponse[Calendar](
-            data=[Calendar.model_validate(item) for item in raw["data"]],
-            total=raw["total"],
-            limit=raw["limit"],
-            offset=raw["offset"],
-        )
+        list_resp = parse_list_response(Calendar, raw)
         return AsyncPager(
             list_resp,
             client=self._client,

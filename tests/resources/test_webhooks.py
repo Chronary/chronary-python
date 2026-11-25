@@ -650,10 +650,11 @@ class TestClientWebhooksVerifyDelegation:
     """
 
     def _sign(self, payload: bytes, timestamp: str, secret: str) -> str:
+        """The v2 signature (#2569) for delivery whd_1, event.created, live."""
         import hashlib
         import hmac
 
-        message = f"{timestamp}.".encode("utf-8") + payload
+        message = f"v2\n{timestamp}\nwhd_1\nevent.created\n0\n\n".encode("utf-8") + payload
         return "sha256=" + hmac.new(secret.encode(), message, hashlib.sha256).hexdigest()
 
     def test_verify_signature_accepts_valid_webhook(self) -> None:
@@ -663,8 +664,9 @@ class TestClientWebhooksVerifyDelegation:
         payload = b'{"event":{"id":"evt_1"}}'
         ts = str(int(time.time()))
         headers = {
-            "X-Signature": self._sign(payload, ts, secret),
+            "X-Signature-V2": self._sign(payload, ts, secret),
             "X-Timestamp": ts,
+            "X-Delivery-Id": "whd_1",
             "X-Chronary-Event-Type": "event.created",
         }
 
@@ -681,8 +683,9 @@ class TestClientWebhooksVerifyDelegation:
         payload = b'{"event":{"id":"evt_1"}}'
         ts = str(int(time.time()))
         headers = {
-            "X-Signature": self._sign(payload, ts, secret),
+            "X-Signature-V2": self._sign(payload, ts, secret),
             "X-Timestamp": ts,
+            "X-Delivery-Id": "whd_1",
             "X-Chronary-Event-Type": "event.created",
         }
 
@@ -702,14 +705,21 @@ class TestClientWebhooksVerifyDelegation:
         payload = json.dumps(event_body).encode("utf-8")
         ts = str(int(time.time()))
         headers = {
-            "X-Signature": self._sign(payload, ts, secret),
+            "X-Signature-V2": self._sign(payload, ts, secret),
             "X-Timestamp": ts,
+            "X-Delivery-Id": "whd_1",
             "X-Chronary-Event-Type": "event.created",
         }
 
         with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
             result = client.webhooks.unwrap(payload, headers, secret=secret)
-            assert result == {"type": "event.created", "data": event_body}
+            assert result == {
+                "type": "event.created",
+                "data": event_body,
+                "delivery_id": "whd_1",
+                "test": False,
+                "replay_of": None,
+            }
 
     async def test_async_client_exposes_same_methods(self) -> None:
         import time
@@ -718,8 +728,9 @@ class TestClientWebhooksVerifyDelegation:
         payload = b'{"event":{"id":"evt_1"}}'
         ts = str(int(time.time()))
         headers = {
-            "X-Signature": self._sign(payload, ts, secret),
+            "X-Signature-V2": self._sign(payload, ts, secret),
             "X-Timestamp": ts,
+            "X-Delivery-Id": "whd_1",
             "X-Chronary-Event-Type": "event.created",
         }
 

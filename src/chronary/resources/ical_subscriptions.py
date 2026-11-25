@@ -157,7 +157,8 @@ class ICalSubscriptions(SyncAPIResource):
 
         Read the subscription a few seconds later for ``last_synced_at`` /
         ``last_error``. A paused feed raises a 409 error; a second sync of the
-        same feed within a minute raises a 429 error.
+        same feed during its cooldown (1 minute; 15 minutes on Free) raises a
+        429 error. A remaining cooldown over 60 seconds is not retried.
         """
         self._request(
             "POST", f"{_ICAL_PATH}/{path_segment(subscription_id)}/sync", max_retries=max_retries
@@ -293,7 +294,8 @@ class AsyncICalSubscriptions(AsyncAPIResource):
 
         Read the subscription a few seconds later for ``last_synced_at`` /
         ``last_error``. A paused feed raises a 409 error; a second sync of the
-        same feed within a minute raises a 429 error.
+        same feed during its cooldown (1 minute; 15 minutes on Free) raises a
+        429 error. A remaining cooldown over 60 seconds is not retried.
         """
         await self._request(
             "POST", f"{_ICAL_PATH}/{path_segment(subscription_id)}/sync", max_retries=max_retries

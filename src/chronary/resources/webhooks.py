@@ -101,7 +101,8 @@ class Webhook(ChronaryModel):
         default=None, alias="deactivatedReason"
     )
     # While a secret rotation's grace window is open, when the replaced secret
-    # stops working (deliveries also carry ``X-Signature-Previous`` until then).
+    # stops working (deliveries also carry ``X-Signature-V2-Previous`` and
+    # ``X-Signature-Previous`` until then).
     previous_secret_expires_at: datetime | None = Field(
         default=None, alias="previousSecretExpiresAt"
     )
@@ -445,10 +446,11 @@ class Webhooks(SyncAPIResource):
     ) -> RotatedWebhookSecret:
         """Rotate the endpoint's signing secret (Developer or Pro). Returns the new secret once.
 
-        The new secret signs ``X-Signature`` from the next attempt. The replaced
-        secret keeps signing ``X-Signature-Previous`` until ``expire_old_in`` has
-        passed: "now", "1h", "24h" (the API default) or "7d". ``verify_signature``
-        accepts either header, so receivers can switch secrets in that window.
+        The new secret signs ``X-Signature-V2`` (and v1 ``X-Signature``) from the
+        next attempt. The replaced secret keeps signing ``X-Signature-V2-Previous``
+        (and ``X-Signature-Previous``) until ``expire_old_in`` has passed: "now",
+        "1h", "24h" (the API default) or "7d". ``verify_signature`` accepts a match
+        on either v2 header, so receivers can switch secrets in that window.
         """
         path = f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}/secret/rotate"
         body: dict[str, Any] = {} if expire_old_in is None else {"expire_old_in": expire_old_in}
@@ -673,10 +675,11 @@ class AsyncWebhooks(AsyncAPIResource):
     ) -> RotatedWebhookSecret:
         """Rotate the endpoint's signing secret (Developer or Pro). Returns the new secret once.
 
-        The new secret signs ``X-Signature`` from the next attempt. The replaced
-        secret keeps signing ``X-Signature-Previous`` until ``expire_old_in`` has
-        passed: "now", "1h", "24h" (the API default) or "7d". ``verify_signature``
-        accepts either header, so receivers can switch secrets in that window.
+        The new secret signs ``X-Signature-V2`` (and v1 ``X-Signature``) from the
+        next attempt. The replaced secret keeps signing ``X-Signature-V2-Previous``
+        (and ``X-Signature-Previous``) until ``expire_old_in`` has passed: "now",
+        "1h", "24h" (the API default) or "7d". ``verify_signature`` accepts a match
+        on either v2 header, so receivers can switch secrets in that window.
         """
         path = f"{_WEBHOOKS_PATH}/{path_segment(webhook_id)}/secret/rotate"
         body: dict[str, Any] = {} if expire_old_in is None else {"expire_old_in": expire_old_in}

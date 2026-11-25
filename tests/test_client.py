@@ -10,6 +10,8 @@ import respx
 
 from chronary import AsyncChronary, Chronary
 
+_EMPTY_LIST = {"data": [], "total": 0, "limit": 20, "offset": 0}
+
 
 class TestSyncClient:
     def test_construct_with_explicit_key(self) -> None:
@@ -54,6 +56,91 @@ class TestSyncClient:
         assert not client._owns_client
         client.close()
 
+    # #2520: a caller-supplied httpx client must still get the SDK's auth
+    # headers and, when it has no base_url of its own, the SDK's base_url.
+    @respx.mock
+    def test_custom_client_with_base_url_sends_auth_and_user_agent(self) -> None:
+        route = respx.get("https://api.chronary.ai/v1/agents").mock(
+            return_value=httpx.Response(200, json=_EMPTY_LIST)
+        )
+        client = Chronary(
+            api_key="chr_sk_x", httpx_client=httpx.Client(base_url="https://api.chronary.ai")
+        )
+        client.agents.list()
+        req = route.calls.last.request
+        assert req.headers.get("authorization") == "Bearer chr_sk_x"
+        assert req.headers.get("user-agent", "").startswith("chronary-py/")
+
+    @respx.mock
+    def test_custom_client_readme_example_without_base_url(self) -> None:
+        route = respx.get("https://api.chronary.ai/v1/agents").mock(
+            return_value=httpx.Response(200, json=_EMPTY_LIST)
+        )
+        http_client = httpx.Client(transport=httpx.HTTPTransport(retries=3))
+        client = Chronary(api_key="chr_sk_x", httpx_client=http_client)
+        client.agents.list()
+        assert route.calls.last.request.headers.get("authorization") == "Bearer chr_sk_x"
+
+    @respx.mock
+    def test_custom_client_without_base_url_uses_sdk_base_url(self) -> None:
+        route = respx.get("https://dev.example.test/v1/agents").mock(
+            return_value=httpx.Response(200, json=_EMPTY_LIST)
+        )
+        client = Chronary(
+            api_key="chr_sk_x", base_url="https://dev.example.test/", httpx_client=httpx.Client()
+        )
+        client.agents.list()
+        assert route.called
+
+    @respx.mock
+    def test_custom_client_without_key_sends_no_authorization(self) -> None:
+        route = respx.get("https://api.chronary.ai/v1/plans").mock(
+            return_value=httpx.Response(200, json={"data": []})
+        )
+        with patch.dict(os.environ, {}, clear=True):
+            client = Chronary(httpx_client=httpx.Client())
+        client._request("GET", "/v1/plans")
+        assert "authorization" not in route.calls.last.request.headers
+
+    @respx.mock
+    def test_custom_client_own_headers_are_kept(self) -> None:
+        # Review of #2520: the SDK must not override headers the caller set.
+        route = respx.get("https://api.chronary.ai/v1/agents").mock(
+            return_value=httpx.Response(200, json=_EMPTY_LIST)
+        )
+        http_client = httpx.Client(
+            headers={"authorization": "Bearer from_client", "User-Agent": "my-app/1.0"}
+        )
+        client = Chronary(api_key="chr_sk_x", httpx_client=http_client)
+        client.agents.list()
+        req = route.calls.last.request
+        assert req.headers.get("authorization") == "Bearer from_client"
+        assert req.headers.get("user-agent") == "my-app/1.0"
+        assert req.headers.get("accept") == "application/json"
+
+    @respx.mock
+    def test_custom_client_explicit_timeout_applies_per_request(self) -> None:
+        route = respx.get("https://api.chronary.ai/v1/agents").mock(
+            return_value=httpx.Response(200, json=_EMPTY_LIST)
+        )
+        client = Chronary(api_key="chr_sk_x", timeout=12.0, httpx_client=httpx.Client(timeout=5.0))
+        client.agents.list()
+        assert route.calls.last.request.extensions["timeout"]["read"] == 12.0
+
+    @respx.mock
+    def test_custom_client_keeps_its_own_timeout_when_none_passed(self) -> None:
+        route = respx.get("https://api.chronary.ai/v1/agents").mock(
+            return_value=httpx.Response(200, json=_EMPTY_LIST)
+        )
+        client = Chronary(api_key="chr_sk_x", httpx_client=httpx.Client(timeout=5.0))
+        client.agents.list()
+        assert route.calls.last.request.extensions["timeout"]["read"] == 5.0
+
+    def test_default_timeout_is_60_seconds(self) -> None:
+        client = Chronary(api_key="chr_sk_x")
+        assert client._client.timeout.read == 60.0
+        client.close()
+
     def test_context_manager(self) -> None:
         with Chronary(api_key="chr_sk_x") as client:
             assert isinstance(client, Chronary)
@@ -95,6 +182,59 @@ class TestAsyncClient:
             os.environ.pop("CHRONARY_API_KEY", None)
             client = AsyncChronary()
             assert client._api_key is None
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_async_custom_client_sends_auth(self) -> None:
+        # #2520, async counterpart.
+        route = respx.get("https://api.chronary.ai/v1/agents").mock(
+            return_value=httpx.Response(200, json=_EMPTY_LIST)
+        )
+        client = AsyncChronary(
+            api_key="chr_sk_x", httpx_client=httpx.AsyncClient(base_url="https://api.chronary.ai")
+        )
+        await client.agents.list()
+        req = route.calls.last.request
+        assert req.headers.get("authorization") == "Bearer chr_sk_x"
+        assert req.headers.get("user-agent", "").startswith("chronary-py/")
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_async_custom_client_without_base_url(self) -> None:
+        route = respx.get("https://api.chronary.ai/v1/agents").mock(
+            return_value=httpx.Response(200, json=_EMPTY_LIST)
+        )
+        client = AsyncChronary(api_key="chr_sk_x", httpx_client=httpx.AsyncClient())
+        await client.agents.list()
+        assert route.calls.last.request.headers.get("authorization") == "Bearer chr_sk_x"
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_async_custom_client_own_authorization_is_kept(self) -> None:
+        route = respx.get("https://api.chronary.ai/v1/agents").mock(
+            return_value=httpx.Response(200, json=_EMPTY_LIST)
+        )
+        http_client = httpx.AsyncClient(headers={"Authorization": "Bearer from_client"})
+        client = AsyncChronary(api_key="chr_sk_x", httpx_client=http_client)
+        await client.agents.list()
+        req = route.calls.last.request
+        assert req.headers.get("authorization") == "Bearer from_client"
+        assert req.headers.get("user-agent", "").startswith("chronary-py/")
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_async_custom_client_timeout(self) -> None:
+        route = respx.get("https://api.chronary.ai/v1/agents").mock(
+            return_value=httpx.Response(200, json=_EMPTY_LIST)
+        )
+        explicit = AsyncChronary(
+            api_key="chr_sk_x", timeout=12.0, httpx_client=httpx.AsyncClient(timeout=5.0)
+        )
+        await explicit.agents.list()
+        assert route.calls.last.request.extensions["timeout"]["read"] == 12.0
+        implicit = AsyncChronary(api_key="chr_sk_x", httpx_client=httpx.AsyncClient(timeout=5.0))
+        await implicit.agents.list()
+        assert route.calls.last.request.extensions["timeout"]["read"] == 5.0
 
     @pytest.mark.asyncio
     async def test_context_manager(self) -> None:

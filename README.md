@@ -84,6 +84,8 @@ http_client = httpx.Client(transport=transport)
 client = Chronary(api_key="chr_sk_...", httpx_client=http_client)
 ```
 
+The SDK adds its `Authorization`, `User-Agent` and `Accept` headers to every request sent through your client unless your client already sets them, and uses its own `base_url` when your client has none. Your client's timeout applies unless you also pass `timeout=` to `Chronary`.
+
 ## Resources
 
 | Resource | Accessor | Methods |
@@ -126,6 +128,8 @@ print(pager.data)       # list of items
 print(pager.total)      # total count
 print(pager.has_more)   # whether more pages exist
 ```
+
+`agents.list()`, `calendars.list()`, `agents.calendars.list()` and `events.list_all()` page by cursor: `auto_paging_iter()` follows `next_cursor`, so it is not limited by the API's 10,000-row cap on `offset`. For manual paging, pass `pager.next_cursor` as `cursor=` to the same method. Other lists page by offset.
 
 ## Error handling
 
@@ -173,6 +177,8 @@ except SignatureVerificationError:
     ...
 ```
 
+Verification checks `X-Signature-V2`, which covers the body, `X-Timestamp`, `X-Delivery-Id`, `X-Chronary-Event-Type`, `X-Chronary-Test` and `X-Chronary-Replay-Of`; the deprecated v1 `X-Signature` is not accepted. `unwrap()` verifies and returns `type`, `data`, `delivery_id`, `test` and `replay_of`, all covered by the signature, so deduplicate on `event["delivery_id"]`.
+
 ## Request IDs
 
 Every response model carries an `_request_id` attribute for correlating with server logs:
@@ -201,7 +207,7 @@ Chronary enforces a per-key rate limit and per-org monthly quotas that vary by p
 
 Paid-plan features are scheduling proposals, temporal holds, cross-agent availability, per-agent API keys, and webhook delivery replay and secret rotation. Developer and Pro have the same features and differ only in their limits.
 
-Paid-plan feature calls raise `APIError` (status 403) on Free. The SDK automatically retries `429` and `5xx` responses with exponential backoff (`max_retries`). See <https://docs.chronary.ai/resources/rate-limits/> for the full matrix.
+Paid-plan feature calls raise `APIError` (status 403) on Free. The SDK automatically retries `429` and `5xx` responses with exponential backoff (`max_retries`), except a monthly quota error (`quota_exceeded`) and any refusal whose `Retry-After` is longer than 60 seconds (an iCal sync cooldown, a daily sign-up cap), which raise at once. See <https://docs.chronary.ai/resources/rate-limits/> for the full matrix.
 
 ## Security and support
 

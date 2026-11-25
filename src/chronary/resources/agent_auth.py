@@ -131,7 +131,7 @@ class AgentAuth(SyncAPIResource):
         agent_name: str,
         tos_version: str,
         source: Literal["playground", "agent"] | None = None,
-        max_retries: int | None = None,
+        max_retries: int | None = 0,
     ) -> AgentSignUpAnonymousResponse:
         """Sign up without an email: a claimable organization.
 
@@ -140,12 +140,20 @@ class AgentAuth(SyncAPIResource):
         409 ``tos_version_stale``, 429 ``rate_limit_error`` and 503
         (``anonymous_signup_disabled``, ``signups_paused``,
         ``anonymous_signup_capacity``, ``temporarily_disabled``).
+
+        Sent once by default (``max_retries=0``): the server does not dedupe
+        this POST, so a retry after a lost response (a 5xx or read timeout
+        after the org was created) would create a second claimable org.
+        Pass ``max_retries`` to opt back in; ``None`` also means 0.
         """
         body: dict[str, Any] = {"agent_name": agent_name, "tos_version": tos_version}
         if source is not None:
             body["source"] = source
         resp = self._request(
-            "POST", _SIGN_UP_ANONYMOUS_PATH, json=body, max_retries=max_retries
+            "POST", _SIGN_UP_ANONYMOUS_PATH,
+            json=body,
+            # None means 0 here too, not the client default (#2690).
+            max_retries=max_retries if max_retries is not None else 0,
         )
         return self._build(AgentSignUpAnonymousResponse, resp)
 
@@ -188,7 +196,7 @@ class AsyncAgentAuth(AsyncAPIResource):
         agent_name: str,
         tos_version: str,
         source: Literal["playground", "agent"] | None = None,
-        max_retries: int | None = None,
+        max_retries: int | None = 0,
     ) -> AgentSignUpAnonymousResponse:
         """Sign up without an email: a claimable organization.
 
@@ -197,12 +205,20 @@ class AsyncAgentAuth(AsyncAPIResource):
         409 ``tos_version_stale``, 429 ``rate_limit_error`` and 503
         (``anonymous_signup_disabled``, ``signups_paused``,
         ``anonymous_signup_capacity``, ``temporarily_disabled``).
+
+        Sent once by default (``max_retries=0``): the server does not dedupe
+        this POST, so a retry after a lost response (a 5xx or read timeout
+        after the org was created) would create a second claimable org.
+        Pass ``max_retries`` to opt back in; ``None`` also means 0.
         """
         body: dict[str, Any] = {"agent_name": agent_name, "tos_version": tos_version}
         if source is not None:
             body["source"] = source
         resp = await self._request(
-            "POST", _SIGN_UP_ANONYMOUS_PATH, json=body, max_retries=max_retries
+            "POST", _SIGN_UP_ANONYMOUS_PATH,
+            json=body,
+            # None means 0 here too, not the client default (#2690).
+            max_retries=max_retries if max_retries is not None else 0,
         )
         return self._build(AgentSignUpAnonymousResponse, resp)
 

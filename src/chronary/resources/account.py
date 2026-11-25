@@ -32,7 +32,7 @@ class Account(SyncAPIResource):
 
     def export(self, *, max_retries: int | None = None) -> dict[str, Any]:
         resp = self._request("GET", _EXPORT_PATH, max_retries=max_retries)
-        return resp  # The full DataExport JSON payload — schema in TS SDK / OpenAPI.
+        return resp.json()  # The full DataExport JSON payload — schema in TS SDK / OpenAPI.
 
     export.__doc__ = _EXPORT_DOC
 
@@ -42,6 +42,6 @@ class AsyncAccount(AsyncAPIResource):
 
     async def export(self, *, max_retries: int | None = None) -> dict[str, Any]:
         resp = await self._request("GET", _EXPORT_PATH, max_retries=max_retries)
-        return resp
+        return resp.json()
 
     export.__doc__ = _EXPORT_DOC
