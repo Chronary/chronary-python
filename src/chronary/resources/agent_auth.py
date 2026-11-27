@@ -12,10 +12,15 @@ from .._resource import AsyncAPIResource, SyncAPIResource
 # ---------------------------------------------------------------------------
 
 
+# Longest ``heard_about`` the API keeps (#2651); longer text is cut before sending.
+_HEARD_ABOUT_MAX = 200
+
+
 class AgentSignUpParams(TypedDict):
     email: Required[str]
     agent_name: Required[str]
     tos_version: Required[str]
+    heard_about: NotRequired[str]
 
 
 class AgentSignUpAnonymousParams(TypedDict):
@@ -115,6 +120,7 @@ class AgentAuth(SyncAPIResource):
         email: str,
         agent_name: str,
         tos_version: str,
+        heard_about: str | None = None,
         max_retries: int | None = None,
     ) -> AgentSignUpResponse:
         body: dict[str, Any] = {
@@ -122,6 +128,11 @@ class AgentAuth(SyncAPIResource):
             "agent_name": agent_name,
             "tos_version": tos_version,
         }
+        # Optional: how the agent found Chronary (plain text, at most 200
+        # characters). Stored for a new organization only; never returned.
+        if heard_about is not None:
+            # Cut to 200 characters so a long answer never costs the sign-up.
+            body["heard_about"] = heard_about[:_HEARD_ABOUT_MAX]
         resp = self._request("POST", _SIGN_UP_PATH, json=body, max_retries=max_retries)
         return self._build(AgentSignUpResponse, resp)
 
@@ -178,6 +189,7 @@ class AsyncAgentAuth(AsyncAPIResource):
         email: str,
         agent_name: str,
         tos_version: str,
+        heard_about: str | None = None,
         max_retries: int | None = None,
     ) -> AgentSignUpResponse:
         body: dict[str, Any] = {
@@ -185,6 +197,11 @@ class AsyncAgentAuth(AsyncAPIResource):
             "agent_name": agent_name,
             "tos_version": tos_version,
         }
+        # Optional: how the agent found Chronary (plain text, at most 200
+        # characters). Stored for a new organization only; never returned.
+        if heard_about is not None:
+            # Cut to 200 characters so a long answer never costs the sign-up.
+            body["heard_about"] = heard_about[:_HEARD_ABOUT_MAX]
         resp = await self._request(
             "POST", _SIGN_UP_PATH, json=body, max_retries=max_retries
         )

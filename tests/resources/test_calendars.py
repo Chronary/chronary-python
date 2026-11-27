@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import httpx
 import respx
 
@@ -117,6 +119,52 @@ class TestSyncCalendars:
             cal = client.calendars.update("cal_abc123", default_reminders=[])
             assert cal.default_reminders == []
             assert b'"default_reminders"' in route.calls[0].request.content
+
+    @respx.mock
+    def test_prevent_overlaps_defaults_false_when_absent(self) -> None:
+        respx.get(f"{BASE}/v1/calendars/cal_abc123").mock(
+            return_value=httpx.Response(200, json=CALENDAR_DATA)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            assert client.calendars.get("cal_abc123").prevent_overlaps is False
+
+    @respx.mock
+    def test_create_with_prevent_overlaps(self) -> None:
+        created = {**CALENDAR_DATA, "prevent_overlaps": True}
+        route = respx.post(f"{BASE}/v1/calendars").mock(
+            return_value=httpx.Response(201, json=created)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            cal = client.calendars.create(
+                name="Sales Agent Calendar",
+                timezone="America/New_York",
+                prevent_overlaps=True,
+            )
+            assert cal.prevent_overlaps is True
+            assert json.loads(route.calls[0].request.content)["prevent_overlaps"] is True
+
+    @respx.mock
+    def test_update_prevent_overlaps_sent_only_when_given(self) -> None:
+        route = respx.patch(f"{BASE}/v1/calendars/cal_abc123").mock(
+            return_value=httpx.Response(200, json={**CALENDAR_DATA, "prevent_overlaps": False})
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            client.calendars.update("cal_abc123", prevent_overlaps=False)
+            client.calendars.update("cal_abc123", name="Renamed")
+            assert json.loads(route.calls[0].request.content) == {"prevent_overlaps": False}
+            assert "prevent_overlaps" not in json.loads(route.calls[1].request.content)
+
+    @respx.mock
+    def test_agent_calendar_create_with_prevent_overlaps(self) -> None:
+        route = respx.post(f"{BASE}/v1/agents/agt_abc123/calendars").mock(
+            return_value=httpx.Response(201, json={**CALENDAR_DATA, "prevent_overlaps": True})
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE) as client:
+            cal = client.agents.calendars.create(
+                "agt_abc123", name="Desk", timezone="UTC", prevent_overlaps=True
+            )
+            assert cal.prevent_overlaps is True
+            assert json.loads(route.calls[0].request.content)["prevent_overlaps"] is True
 
     @respx.mock
     def test_delete(self) -> None:

@@ -64,6 +64,48 @@ class TestSyncAgentAuth:
         assert "2026-04-17" in sent
 
     @respx.mock
+    def test_sign_up_sends_heard_about_only_when_given(self) -> None:
+        # #2651: optional, plain text.
+        route = respx.post(f"{BASE}/v1/agent/sign-up").mock(
+            return_value=httpx.Response(200, json=NEW_ORG_RESPONSE)
+        )
+        with Chronary(api_key=None, base_url=BASE) as client:
+            client.agent_auth.sign_up(
+                email="alice@example.com",
+                agent_name="Alice Bot",
+                tos_version="2026-04-17",
+                heard_about="A forum thread",
+            )
+            client.agent_auth.sign_up(
+                email="bob@example.com",
+                agent_name="Bob Bot",
+                tos_version="2026-04-17",
+            )
+        import json as _json
+
+        first = _json.loads(route.calls[0].request.content)
+        second = _json.loads(route.calls[1].request.content)
+        assert first["heard_about"] == "A forum thread"
+        assert "heard_about" not in second
+
+    @respx.mock
+    def test_sign_up_cuts_heard_about_to_200_characters(self) -> None:
+        # #2651 review: a long informational answer must never cost the sign-up.
+        route = respx.post(f"{BASE}/v1/agent/sign-up").mock(
+            return_value=httpx.Response(200, json=NEW_ORG_RESPONSE)
+        )
+        with Chronary(api_key=None, base_url=BASE) as client:
+            client.agent_auth.sign_up(
+                email="alice@example.com",
+                agent_name="Alice Bot",
+                tos_version="2026-04-17",
+                heard_about="a" * 199 + "\U0001F4C5" + "b" * 100,
+            )
+        import json as _json
+
+        assert _json.loads(route.calls.last.request.content)["heard_about"] == "a" * 199 + "\U0001F4C5"
+
+    @respx.mock
     def test_sign_up_existing_org_dedup_returns_only_message(self) -> None:
         respx.post(f"{BASE}/v1/agent/sign-up").mock(
             return_value=httpx.Response(200, json=EXISTING_ORG_RESPONSE)
@@ -252,6 +294,23 @@ class TestSyncAgentAuthAnonymous:
 
 
 class TestAsyncAgentAuth:
+    @respx.mock
+    async def test_sign_up_sends_heard_about(self) -> None:
+        # #2651, async counterpart.
+        route = respx.post(f"{BASE}/v1/agent/sign-up").mock(
+            return_value=httpx.Response(200, json=NEW_ORG_RESPONSE)
+        )
+        async with AsyncChronary(api_key=None, base_url=BASE) as client:
+            await client.agent_auth.sign_up(
+                email="alice@example.com",
+                agent_name="Alice Bot",
+                tos_version="2026-04-17",
+                heard_about="Someone I know",
+            )
+        import json as _json
+
+        assert _json.loads(route.calls.last.request.content)["heard_about"] == "Someone I know"
+
     @respx.mock
     async def test_sign_up_anonymous_max_retries_none_means_no_retry(self) -> None:
         route = respx.post(f"{BASE}/v1/agent/sign-up/anonymous").mock(

@@ -2,7 +2,12 @@
 
 All notable changes to `chronary` (Python SDK) will be documented in this file starting with the soft-launch release.
 
-## 0.14.0 — unreleased
+## 0.14.1 — unreleased
+
+- **`agent_auth.sign_up()` takes an optional `heard_about` (#2651)** (sync and async; also on `AgentSignUpParams`). Plain text: how you or your user found Chronary, cut to 200 characters before sending. `None` leaves it out of the request. The API keeps it for a new organization only and never returns it.
+- **Calendars that refuse double bookings (#595).** `Calendar` gains `prevent_overlaps` (`bool`, `False` when absent), and `calendars.create()`, `calendars.update()` and `agents.calendars.create()` (sync and async) take `prevent_overlaps: bool | None`; `None` leaves it out of the request. With it on, the calendar refuses any event that would overlap an active event on it with a 409 `conflict`. `APIStatusError` gains `code` (`str | None`, e.g. `"event_conflict"`) and `conflicting_event_ids` (`list[str]`, empty when the body has none).
+
+## 0.14.0 — 2026-11-24
 
 - **Breaking: webhook verification requires the v2 signature (#2569).** Chronary now signs every delivery twice: `X-Signature` (v1, over `{X-Timestamp}.{body}`, unchanged and deprecated) and the new `X-Signature-V2`, which also covers `X-Delivery-Id`, `X-Chronary-Event-Type`, `X-Chronary-Test` and `X-Chronary-Replay-Of`. Under v1 those headers were unsigned, so anyone holding a captured delivery could re-send it within the 5-minute tolerance under another event type (for example `event.hold_released` as `event.deleted`), with a fresh delivery id that got past deduplication, or with the test flag removed. `verify_signature()` and `unwrap()` (module functions and `client.webhooks.*`, sync and async) now check `X-Signature-V2` (or, during a secret rotation, `X-Signature-V2-Previous`) and never fall back to `X-Signature`: a delivery without `X-Signature-V2` raises `SignatureVerificationError`, as does one whose event type, delivery id, test flag or replay id differs from what was signed, an `X-Chronary-Test` other than `1`, or a header value containing CR or LF. Both also require `X-Delivery-Id` and `X-Chronary-Event-Type`. Every Chronary delivery carries the v2 headers, so a receiver needs no change beyond upgrading; test fixtures that sign deliveries by hand must add `X-Signature-V2` (see the webhooks API reference for the message format). Function signatures are unchanged.
 - **`unwrap()` also returns `delivery_id`, `test` and `replay_of`** (`None` when the delivery is not a replay). They are covered by the signature, so deduplicate on `event["delivery_id"]`.

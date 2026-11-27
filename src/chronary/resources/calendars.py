@@ -41,6 +41,10 @@ class Calendar(ChronaryModel):
     # their own. Each entry is between 1 and 40320 (28 days); max 5 entries. The system
     # default is [10] (10 minutes).
     default_reminders: list[int] | None = None
+    # Double-booking guarantee: when True, the calendar refuses any create,
+    # reschedule, reactivation or hold confirm that would overlap an active
+    # event on it (409 ``conflict``, code ``event_conflict``). Default False.
+    prevent_overlaps: bool = False
     deleted_at: datetime | None = Field(default=None, alias="deletedAt")
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")
@@ -59,6 +63,8 @@ class CalendarCreateParams(TypedDict):
     # Default reminder offsets (minutes before start) for events on this calendar.
     # Max 5 entries, each between 1 and 40320 (28 days). The system default is [10].
     default_reminders: NotRequired[list[int]]
+    # True: the calendar refuses overlapping events (double-booking guarantee).
+    prevent_overlaps: NotRequired[bool]
 
 
 class CalendarUpdateParams(TypedDict, total=False):
@@ -67,6 +73,7 @@ class CalendarUpdateParams(TypedDict, total=False):
     agent_status: AgentStatus
     metadata: dict[str, Any]
     default_reminders: list[int]
+    prevent_overlaps: bool
 
 
 class CalendarListParams(TypedDict, total=False):
@@ -151,6 +158,7 @@ class Calendars(SyncAPIResource):
         agent_status: AgentStatus | None = None,
         metadata: dict[str, Any] | None = None,
         default_reminders: list[int] | None = None,
+        prevent_overlaps: bool | None = None,
         max_retries: int | None = None,
     ) -> Calendar:
         body: dict[str, Any] = {"name": name, "timezone": timezone}
@@ -160,6 +168,8 @@ class Calendars(SyncAPIResource):
             body["metadata"] = metadata
         if default_reminders is not None:
             body["default_reminders"] = default_reminders
+        if prevent_overlaps is not None:
+            body["prevent_overlaps"] = prevent_overlaps
         resp = self._request("POST", _CALENDARS_PATH, json=body, max_retries=max_retries)
         return self._build(Calendar, resp)
 
@@ -210,6 +220,7 @@ class Calendars(SyncAPIResource):
         agent_status: AgentStatus | None = None,
         metadata: dict[str, Any] | None = None,
         default_reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
+        prevent_overlaps: bool | None = None,
         max_retries: int | None = None,
     ) -> Calendar:
         body: dict[str, Any] = {}
@@ -223,6 +234,8 @@ class Calendars(SyncAPIResource):
             body["metadata"] = metadata
         if default_reminders is not _UNSET:
             body["default_reminders"] = default_reminders
+        if prevent_overlaps is not None:
+            body["prevent_overlaps"] = prevent_overlaps
         resp = self._request(
             "PATCH", f"{_CALENDARS_PATH}/{path_segment(calendar_id)}", json=body, max_retries=max_retries
         )
@@ -321,6 +334,7 @@ class AsyncCalendars(AsyncAPIResource):
         agent_status: AgentStatus | None = None,
         metadata: dict[str, Any] | None = None,
         default_reminders: list[int] | None = None,
+        prevent_overlaps: bool | None = None,
         max_retries: int | None = None,
     ) -> Calendar:
         body: dict[str, Any] = {"name": name, "timezone": timezone}
@@ -330,6 +344,8 @@ class AsyncCalendars(AsyncAPIResource):
             body["metadata"] = metadata
         if default_reminders is not None:
             body["default_reminders"] = default_reminders
+        if prevent_overlaps is not None:
+            body["prevent_overlaps"] = prevent_overlaps
         resp = await self._request("POST", _CALENDARS_PATH, json=body, max_retries=max_retries)
         return self._build(Calendar, resp)
 
@@ -384,6 +400,7 @@ class AsyncCalendars(AsyncAPIResource):
         agent_status: AgentStatus | None = None,
         metadata: dict[str, Any] | None = None,
         default_reminders: list[int] | None = _UNSET,  # type: ignore[assignment]
+        prevent_overlaps: bool | None = None,
         max_retries: int | None = None,
     ) -> Calendar:
         body: dict[str, Any] = {}
@@ -397,6 +414,8 @@ class AsyncCalendars(AsyncAPIResource):
             body["metadata"] = metadata
         if default_reminders is not _UNSET:
             body["default_reminders"] = default_reminders
+        if prevent_overlaps is not None:
+            body["prevent_overlaps"] = prevent_overlaps
         resp = await self._request(
             "PATCH", f"{_CALENDARS_PATH}/{path_segment(calendar_id)}", json=body, max_retries=max_retries
         )
@@ -500,6 +519,7 @@ class AgentCalendars(SyncAPIResource):
         agent_status: AgentStatus | None = None,
         metadata: dict[str, Any] | None = None,
         default_reminders: list[int] | None = None,
+        prevent_overlaps: bool | None = None,
         max_retries: int | None = None,
     ) -> Calendar:
         path = _AGENT_CALENDARS_PATH.format(agent_id=path_segment(agent_id))
@@ -510,6 +530,8 @@ class AgentCalendars(SyncAPIResource):
             body["metadata"] = metadata
         if default_reminders is not None:
             body["default_reminders"] = default_reminders
+        if prevent_overlaps is not None:
+            body["prevent_overlaps"] = prevent_overlaps
         resp = self._request("POST", path, json=body, max_retries=max_retries)
         return self._build(Calendar, resp)
 
@@ -554,6 +576,7 @@ class AsyncAgentCalendars(AsyncAPIResource):
         agent_status: AgentStatus | None = None,
         metadata: dict[str, Any] | None = None,
         default_reminders: list[int] | None = None,
+        prevent_overlaps: bool | None = None,
         max_retries: int | None = None,
     ) -> Calendar:
         path = _AGENT_CALENDARS_PATH.format(agent_id=path_segment(agent_id))
@@ -564,6 +587,8 @@ class AsyncAgentCalendars(AsyncAPIResource):
             body["metadata"] = metadata
         if default_reminders is not None:
             body["default_reminders"] = default_reminders
+        if prevent_overlaps is not None:
+            body["prevent_overlaps"] = prevent_overlaps
         resp = await self._request("POST", path, json=body, max_retries=max_retries)
         return self._build(Calendar, resp)
 

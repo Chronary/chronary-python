@@ -80,6 +80,12 @@ class APIStatusError(APIError):
     contact_url: str | None
     metric: str | None
     limit: int | None
+    # Specific reason on some errors, e.g. ``event_conflict`` on a 409 from a
+    # calendar that refuses overlapping events.
+    code: str | None
+    # The events in the way (409 ``event_conflict``, ``calendar_has_overlaps``,
+    # ``calendar_has_recurring_series``); empty when the body carries none.
+    conflicting_event_ids: list[str]
 
     def __init__(
         self,
@@ -105,6 +111,11 @@ class APIStatusError(APIError):
         self.contact_url = error_obj.get("contact_url")
         self.metric = error_obj.get("metric")
         self.limit = error_obj.get("limit")
+        self.code = error_obj.get("code")
+        ids = error_obj.get("conflicting_event_ids")
+        self.conflicting_event_ids = (
+            [i for i in ids if isinstance(i, str)] if isinstance(ids, list) else []
+        )
 
 
 class BadRequestError(APIStatusError):

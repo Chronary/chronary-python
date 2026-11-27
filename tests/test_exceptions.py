@@ -141,6 +141,30 @@ class TestSyncExceptions:
             with pytest.raises(APIStatusError) as exc_info:
                 client.agents.get("agt_1")
             assert exc_info.value.status_code == 418
+            assert exc_info.value.code is None
+            assert exc_info.value.conflicting_event_ids == []
+
+    @respx.mock
+    def test_409_event_conflict_exposes_code_and_ids(self) -> None:
+        body = _error_body("conflict", "This calendar refuses overlapping events")
+        body["error"]["code"] = "event_conflict"
+        body["error"]["conflicting_event_ids"] = ["evt_1", "evt_2"]
+        respx.post(f"{BASE}/v1/calendars/cal_1/events").mock(
+            return_value=httpx.Response(409, json=body)
+        )
+        with Chronary(api_key="chr_sk_x", base_url=BASE, max_retries=0) as client:
+            with pytest.raises(APIStatusError) as exc_info:
+                client.events.create(
+                    "cal_1",
+                    title="Call",
+                    start_time="2026-12-01T10:00:00Z",
+                    end_time="2026-12-01T11:00:00Z",
+                )
+            err = exc_info.value
+            assert err.status_code == 409
+            assert err.error_type == "conflict"
+            assert err.code == "event_conflict"
+            assert err.conflicting_event_ids == ["evt_1", "evt_2"]
 
 
 class TestAsyncExceptions:
